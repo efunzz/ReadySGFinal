@@ -1,3 +1,6 @@
+if (typeof structuredClone === 'undefined') {
+  global.structuredClone = (obj) => JSON.parse(JSON.stringify(obj));
+}
 // App.js - Add this at the VERY TOP of the file, before other imports
 import 'react-native-gesture-handler';
 
