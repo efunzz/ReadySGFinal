@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert } from 'react-native';
-// import { signInWithEmailAndPassword } from 'firebase/auth';
-// import { auth } from '../firebase'; // Make sure this path is correct
+import { supabase } from '../lib/supabase';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -13,29 +12,28 @@ export default function LoginScreen({ navigation }) {
       Alert.alert('Error', 'Please enter both email and password');
       return;
     }
-   
+  
     setLoading(true);
-    
-    // Simulate loading for UI testing
-    setTimeout(() => {
-      setLoading(false);
-      // Just navigate to main app without authentication
-      navigation.navigate('MainApp');
-    }, 1000);
-
-    /* COMMENTED OUT FIREBASE CODE
+    console.log('Starting login for:', email);
+  
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      console.log('User logged in:', userCredential.user);
-      navigation.navigate('MainApp');
-    } catch (error) {
-      console.error('Login error:', error);
-      Alert.alert('Login Failed', error.message);
+      const { error, data } = await supabase.auth.signInWithPassword({ email, password });
+      console.log('Login response:', { error, data });
+  
+      if (error) {
+        Alert.alert('Login Failed', error.message);
+      } else {
+        console.log('Login success, navigating to MainApp');
+        navigation.navigate('MainApp');
+      }
+    } catch (e) {
+      console.error('Login caught error:', e);
+      Alert.alert('Unexpected Error', e.message);
     } finally {
       setLoading(false);
     }
-    */
   };
+  
 
   return (
     <View style={styles.container}>

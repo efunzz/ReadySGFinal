@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert } from 'react-native';
-// import { createUserWithEmailAndPassword } from 'firebase/auth';
-// import { auth } from '../firebase'; // Make sure path is correct
+import { supabase } from '../lib/supabase';
 
 export default function SignupScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -13,36 +12,35 @@ export default function SignupScreen({ navigation }) {
       Alert.alert('Error', 'Please enter both email and password');
       return;
     }
-   
+  
     if (password.length < 6) {
       Alert.alert('Error', 'Password should be at least 6 characters');
       return;
     }
-   
+  
     setLoading(true);
-    
-    // Simulate loading for UI testing
-    setTimeout(() => {
-      setLoading(false);
-      Alert.alert('Success', 'Account created successfully!', [
-        { text: 'OK', onPress: () => navigation.navigate('Login') }
-      ]);
-    }, 1000);
-
-    /* COMMENTED OUT FIREBASE CODE
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      console.log('User created:', userCredential.user);
-      Alert.alert('Success', 'Account created successfully!', [
-        { text: 'OK', onPress: () => navigation.navigate('Login') }
-      ]);
-    } catch (error) {
-      console.error('Signup error:', error);
+  
+    // Supabase signup call
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+  
+    setLoading(false);
+  
+    if (error) {
       Alert.alert('Signup Failed', error.message);
-    } finally {
-      setLoading(false);
+    } else if (!data.session) {
+      // No session means email confirmation is required
+      Alert.alert(
+        'Success',
+        'Account created! Please check your email to verify your account before logging in.',
+        [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+      );
+    } else {
+      // Session exists, so user is logged in immediately
+      navigation.navigate('MainApp');
     }
-    */
   };
 
   return (
