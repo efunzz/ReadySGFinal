@@ -1,44 +1,52 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert } from 'react-native';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 
-export default function LoginScreen({ navigation }) {
+export default function SignupScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
+  const handleSignup = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please enter both email and password');
       return;
     }
   
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password should be at least 6 characters');
+      return;
+    }
+  
     setLoading(true);
-    console.log('Starting login for:', email);
   
-    try {
-      const { error, data } = await supabase.auth.signInWithPassword({ email, password });
-      console.log('Login response:', { error, data });
+    // Supabase signup call
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
   
-      if (error) {
-        Alert.alert('Login Failed', error.message);
-      } else {
-        console.log('Login success, navigating to MainApp');
-        navigation.navigate('MainApp');
-      }
-    } catch (e) {
-      console.error('Login caught error:', e);
-      Alert.alert('Unexpected Error', e.message);
-    } finally {
-      setLoading(false);
+    setLoading(false);
+  
+    if (error) {
+      Alert.alert('Signup Failed', error.message);
+    } else if (!data.session) {
+      // No session means email confirmation is required
+      Alert.alert(
+        'Success',
+        'Account created! Please check your email to verify your account before logging in.',
+        [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+      );
+    } else {
+      // Session exists, so user is logged in immediately
+      navigation.navigate('MainApp');
     }
   };
-  
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>ReadySG</Text>
-      <Text style={styles.subtitle}>Delicious meals, delivered fast</Text>
+      <Text style={styles.title}>Create Account</Text>
+      <Text style={styles.subtitle}>Sign up to start ordering</Text>
      
       <TextInput
         style={styles.input}
@@ -51,7 +59,7 @@ export default function LoginScreen({ navigation }) {
      
       <TextInput
         style={styles.input}
-        placeholder="Password"
+        placeholder="Password (min 6 characters)"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -59,17 +67,17 @@ export default function LoginScreen({ navigation }) {
      
       <TouchableOpacity
         style={styles.button}
-        onPress={handleLogin}
+        onPress={handleSignup}
         disabled={loading}
       >
-        <Text style={styles.buttonText}>{loading ? 'Loading...' : 'Log In'}</Text>
+        <Text style={styles.buttonText}>{loading ? 'Loading...' : 'Sign Up'}</Text>
       </TouchableOpacity>
      
       <TouchableOpacity
         style={styles.linkButton}
-        onPress={() => navigation.navigate('SignUp')}
+        onPress={() => navigation.navigate('Login')}
       >
-        <Text style={styles.linkText}>Don't have an account? Sign Up</Text>
+        <Text style={styles.linkText}>Already have an account? Log In</Text>
       </TouchableOpacity>
     </View>
   );

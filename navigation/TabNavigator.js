@@ -8,7 +8,7 @@ import { colors } from '../constants/theme';
 import HomeScreen from '../screens/HomeScreen';
 import MenuScreen from '../screens/MenuScreen';
 import CartScreen from '../screens/CartScreen';
-import ProfileScreen from '../screens/ProfileScreen';
+import ProfileScreen from '../screens/auth/ProfileScreen';
 import LikeScreen from '../screens/LikeScreen';
 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
