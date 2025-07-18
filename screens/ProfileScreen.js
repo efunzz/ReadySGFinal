@@ -1,11 +1,23 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
-
-//Import Colors
+{/*seems complicated need to understand the code and how to use it in the app*/}
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
 import { colors } from '../constants/theme';
+import { supabase } from '../lib/supabase';
 
-export default function ProfileScreen({ navigation }) {
-  //Needs to be dynamic based on users
+export default function ProfileScreen({ navigation, session }) {
+  const [loading, setLoading] = useState(true);
+  const [username, setUsername] = useState('');
+  const [website, setWebsite] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  
+  // Temporary state for editing
+  const [editUsername, setEditUsername] = useState('');
+  const [editWebsite, setEditWebsite] = useState('');
+  const [editFullName, setEditFullName] = useState('');
+
+  // Static data that would eventually come from your database
   const userStats = {
     missionsCompleted: 8,
     quizScore: 92,
@@ -23,7 +35,7 @@ export default function ProfileScreen({ navigation }) {
   ];
 
   const profileMenuItems = [
-    { title: 'Personal Information', icon: '👤', subtitle: 'Update your details' },
+    { title: 'Personal Information', icon: '👤', subtitle: 'Update your details', action: () => setIsEditModalVisible(true) },
     { title: 'Emergency Contacts', icon: '📞', subtitle: 'Manage your contacts' },
     { title: 'Notification Settings', icon: '🔔', subtitle: 'Alert preferences' },
     { title: 'Location Settings', icon: '📍', subtitle: 'Your area preferences' },
@@ -32,21 +44,179 @@ export default function ProfileScreen({ navigation }) {
     { title: 'About ReadySG', icon: 'ℹ️', subtitle: 'App information' },
   ];
 
+  useEffect(() => {
+    console.log('useEffect triggered, session:', session?.user?.id);
+    if (session?.user) {
+      getProfile();
+    } else {
+      console.log('No session found, setting loading to false');
+      setLoading(false);
+    }
+
+    // Fallback timeout - if still loading after 10 seconds, stop loading
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.log('Timeout reached, forcing loading to false');
+        setLoading(false);
+        Alert.alert('Warning', 'Profile loading timed out. Using default values.');
+      }
+    }, 30000);
+
+    return () => clearTimeout(timeout);
+  }, [session]);
+
+  async function getProfile() {
+    try {
+      setLoading(true);
+      console.log('Getting profile for user:', session?.user?.id);
+      
+      if (!session?.user) {
+        console.log('No user in session');
+        throw new Error('No user on the session!');
+      }
+
+      console.log('Fetching from profiles table...');
+      const { data, error, status } = await supabase
+        .from('profiles')
+        .select(`username, website, avatar_url, full_name`)
+        .eq('id', session?.user.id)
+        .single();
+
+      console.log('Supabase response:', { data, error, status });
+
+      if (error && status !== 406) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      if (data) {
+        console.log('Profile data found:', data);
+        setUsername(data.username || '');
+        setWebsite(data.website || '');
+        setAvatarUrl(data.avatar_url || '');
+        setFullName(data.full_name || '');
+      } else {
+        console.log('No profile data, using defaults');
+        // Set defaults if no profile exists
+        setUsername('');
+        setWebsite('');
+        setAvatarUrl('');
+        setFullName('');
+      }
+    } catch (error) {
+      console.error('Error in getProfile:', error);
+      if (error instanceof Error) {
+        Alert.alert('Error', error.message);
+      }
+      // Set defaults even on error
+      setUsername('');
+      setWebsite('');
+      setAvatarUrl('');
+      setFullName('');
+    } finally {
+      console.log('Setting loading to false');
+      setLoading(false);
+    }
+  }
+
+  async function updateProfile() {
+    try {
+      setLoading(true);
+      if (!session?.user) throw new Error('No user on the session!');
+
+      const updates = {
+        id: session?.user.id,
+        username: editUsername,
+        website: editWebsite,
+        full_name: editFullName,
+        avatar_url: avatarUrl,
+        updated_at: new Date(),
+      };
+
+      const { error } = await supabase.from('profiles').upsert(updates);
+
+      if (error) {
+        throw error;
+      }
+
+      // Update local state
+      setUsername(editUsername);
+      setWebsite(editWebsite);
+      setFullName(editFullName);
+      setIsEditModalVisible(false);
+      
+      Alert.alert('Success', 'Profile updated successfully!');
+    } catch (error) {
+      if (error instanceof Error) {
+        Alert.alert('Error', error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+              console.error('Logout error:', error.message);
+              Alert.alert('Error', 'Failed to log out. Please try again.');
+            } else {
+              navigation.replace('Login');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const openEditModal = () => {
+    setEditUsername(username);
+    setEditWebsite(website);
+    setEditFullName(fullName);
+    setIsEditModalVisible(true);
+  };
+
+  const getUserDisplayName = () => {
+    return fullName || username || session?.user?.email?.split('@')[0] || 'User';
+  };
+
+  const getUserInitial = () => {
+    const name = getUserDisplayName();
+    return name.charAt(0).toUpperCase();
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Profile Header */}
       <View style={styles.header}>
         <View style={styles.profileImageContainer}>
           <View style={styles.profileImage}>
-            <Text style={styles.profileInitial}>J</Text>
+            <Text style={styles.profileInitial}>{getUserInitial()}</Text>
           </View>
-          <TouchableOpacity style={styles.editIconContainer}>
+          <TouchableOpacity style={styles.editIconContainer} onPress={openEditModal}>
             <Text style={styles.editIcon}>✏️</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.userName}>James Chen</Text>
+        <Text style={styles.userName}>{getUserDisplayName()}</Text>
         <Text style={styles.userLocation}>📍 Toa Payoh, Singapore</Text>
-        <Text style={styles.joinDate}>Member since Jan 2025</Text>
+        <Text style={styles.joinDate}>Member since {new Date(session?.user?.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</Text>
       </View>
 
       {/* Stats Cards Row */}
@@ -120,7 +290,11 @@ export default function ProfileScreen({ navigation }) {
         <Text style={styles.sectionTitle}>Account Settings</Text>
         
         {profileMenuItems.map((item, index) => (
-          <TouchableOpacity key={index} style={styles.menuItem}>
+          <TouchableOpacity 
+            key={index} 
+            style={styles.menuItem}
+            onPress={item.action || (() => {})}
+          >
             <View style={styles.menuIconContainer}>
               <Text style={styles.menuIcon}>{item.icon}</Text>
             </View>
@@ -135,12 +309,89 @@ export default function ProfileScreen({ navigation }) {
 
       {/* Logout Button */}
       <View style={styles.section}>
-        <TouchableOpacity style={styles.logoutButton}>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutText}>Sign Out</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.bottomPadding} />
+      {/* Edit Profile Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isEditModalVisible}
+        onRequestClose={() => setIsEditModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Profile</Text>
+              <TouchableOpacity onPress={() => setIsEditModalVisible(false)}>
+                <Text style={styles.modalCloseButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalContent}>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Email</Text>
+                <TextInput
+                  style={[styles.input, styles.disabledInput]}
+                  value={session?.user?.email}
+                  editable={false}
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Full Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editFullName}
+                  onChangeText={setEditFullName}
+                  placeholder="Enter your full name"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Username</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editUsername}
+                  onChangeText={setEditUsername}
+                  placeholder="Enter your username"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Website</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editWebsite}
+                  onChangeText={setEditWebsite}
+                  placeholder="Enter your website"
+                />
+              </View>
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => setIsEditModalVisible(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.saveButton]}
+                  onPress={updateProfile}
+                  disabled={loading}
+                >
+                  <Text style={styles.saveButtonText}>
+                    {loading ? 'Saving...' : 'Save Changes'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -149,6 +400,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f0f4f8',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f4f8',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: colors.text.secondary,
   },
   header: {
     alignItems: 'center',
@@ -387,7 +648,88 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#e53e3e',
   },
-  bottomPadding: {
-    height: 40,
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    margin: 20,
+    width: '90%',
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+  },
+  modalCloseButton: {
+    fontSize: 18,
+    color: colors.text.light,
+    fontWeight: 'bold',
+  },
+  modalContent: {
+    padding: 20,
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: colors.text.primary,
+    backgroundColor: 'white',
+  },
+  disabledInput: {
+    backgroundColor: '#f7fafc',
+    color: colors.text.light,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#f7fafc',
+    marginRight: 10,
+  },
+  saveButton: {
+    backgroundColor: colors.primary,
+    marginLeft: 10,
+  },
+  cancelButtonText: {
+    color: colors.text.secondary,
+    fontWeight: '600',
+  },
+  saveButtonText: {
+    color: 'white',
+    fontWeight: '600',
   },
 });

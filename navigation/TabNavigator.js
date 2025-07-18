@@ -29,7 +29,7 @@ const CustomTabBarButton = ({ children, onPress }) => {
   );
 };
 
-export default function TabNavigator() {
+export default function TabNavigator({ session }) {
   return (
     <Tab.Navigator
       screenOptions={{
@@ -133,7 +133,6 @@ export default function TabNavigator() {
       {/* Profile - User Profile & Achievements */}
       <Tab.Screen
         name="Profile"
-        component={ProfileScreen}
         options={{
           tabBarIcon: ({ focused, color, size }) => (
             <View style={styles.tabIconContainer}>
@@ -146,7 +145,10 @@ export default function TabNavigator() {
             </View>
           ),
         }}
-      />
+      >
+        {/*session data is passed to profile scrreem as a prop*/}
+        {(props) => <ProfileScreen {...props} session={session} />}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 }
