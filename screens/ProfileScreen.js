@@ -1,8 +1,8 @@
 {/*seems complicated need to understand the code and how to use it in the app*/}
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
-import { colors } from '../constants/theme';
-import { supabase } from '../lib/supabase';
+import { colors } from '../../constants/theme';
+import { supabase } from '../../lib/supabase';
 
 export default function ProfileScreen({ navigation, session }) {
   const [loading, setLoading] = useState(true);
