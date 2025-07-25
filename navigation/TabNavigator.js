@@ -6,7 +6,7 @@ import { colors } from '../constants/theme';
 
 // Import screens
 import HomeScreen from '../screens/HomeScreen';
-import MenuScreen from '../screens/MenuScreen';
+import MenuStackNavigator from '../navigation/MenuStackNavigator'; // Changed this line!
 import CartScreen from '../screens/CartScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import LikeScreen from '../screens/LikeScreen';
@@ -78,10 +78,10 @@ export default function TabNavigator({ session }) {
         }}
       />
       
-      {/* Menu - Learning/Training Missions */}
+      {/* Menu - Learning/Training Missions (NOW USES STACK NAVIGATOR!) */}
       <Tab.Screen
         name="Menu"
-        component={MenuScreen}
+        component={MenuStackNavigator}
         options={{
           tabBarIcon: ({ focused, color, size }) => (
             <View style={styles.tabIconContainer}>
@@ -146,7 +146,7 @@ export default function TabNavigator({ session }) {
           ),
         }}
       >
-        {/*session data is passed to profile scrreem as a prop*/}
+        {/*session data is passed to profile screen as a prop*/}
         {(props) => <ProfileScreen {...props} session={session} />}
       </Tab.Screen>
     </Tab.Navigator>
