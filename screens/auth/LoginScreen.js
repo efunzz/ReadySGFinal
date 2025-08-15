@@ -38,11 +38,12 @@ export default function LoginScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>ReadySG</Text>
-      <Text style={styles.subtitle}>Delicious meals, delivered fast</Text>
+      <Text style={styles.subtitle}>Learn. Prepare. Stay Ready</Text>
      
       <TextInput
         style={styles.input}
         placeholder="Email"
+        placeholderTextColor="#718096"  
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -52,6 +53,7 @@ export default function LoginScreen({ navigation }) {
       <TextInput
         style={styles.input}
         placeholder="Password"
+        placeholderTextColor="#718096" 
         value={password}
         onChangeText={setPassword}
         secureTextEntry

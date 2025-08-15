@@ -2,7 +2,9 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 // Import screens and other navigators
 import LoginScreen from '../screens/auth/LoginScreen';
-import SignupScreen from '../screens/auth/SignUpScreen'; // Add this import
+import SignupScreen from '../screens/auth/SignUpScreen';
+
+ // Add this import
 import TabNavigator from './TabNavigator';
 
 const Stack = createStackNavigator();
