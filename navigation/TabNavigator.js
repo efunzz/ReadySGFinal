@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet, Platform, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-//Import Colors
 import { colors } from '../constants/theme';
 
 // Import screens
@@ -9,25 +8,12 @@ import HomeScreen from '../screens/HomeScreen';
 import MenuStackNavigator from '../navigation/MenuStackNavigator';
 import CartScreen from '../screens/CartScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import LocalResourcesScreen from '../screens/LocalResourcesScreen'; 
+import LocalResourcesScreen from '../screens/LocalResourcesScreen';
 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 const Tab = createBottomTabNavigator();
 const { width } = Dimensions.get('window');
-
-// Custom tab bar button with floating effect for the center tab (Preparedness Tools)
-const CustomTabBarButton = ({ children, onPress }) => {
-  return (
-    <TouchableOpacity
-      style={styles.customButtonContainer}
-      onPress={onPress}
-      activeOpacity={0.8}
-    >
-      <View style={styles.customButton}>{children}</View>
-    </TouchableOpacity>
-  );
-};
 
 export default function TabNavigator({ session }) {
   return (
@@ -38,23 +24,18 @@ export default function TabNavigator({ session }) {
         tabBarStyle: {
           position: 'absolute',
           bottom: 20,
-          left: 20,
-          right: 20,
-          elevation: 8,
-          backgroundColor: 'white',
-          borderRadius: 25,
+          left: width * 0.2,  
+          right: width * 0.2, 
           height: 70,
-          ...Platform.select({
-            ios: {
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.15,
-              shadowRadius: 10,
-            },
-            android: {
-              elevation: 8,
-            },
-          }),
+          backgroundColor: 'white',
+          borderRadius: 80,  
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.15,
+          shadowRadius: 10,
+          paddingTop: 10,
+          paddingBottom: 10,
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: '#9e9e9e',
@@ -65,11 +46,11 @@ export default function TabNavigator({ session }) {
         name="Home"
         component={HomeScreen}
         options={{
-          tabBarIcon: ({ focused, color, size }) => (
+          tabBarIcon: ({ focused, color }) => (
             <View style={styles.tabIconContainer}>
               <Ionicons
                 name={focused ? 'home' : 'home-outline'}
-                size={20}
+                size={28}
                 color={color}
               />
               {focused && <View style={styles.tabBarIndicator} />}
@@ -78,16 +59,16 @@ export default function TabNavigator({ session }) {
         }}
       />
       
-      {/* Menu - Learning/Training Missions (NOW USES STACK NAVIGATOR!) */}
+      {/* Menu - Learning/Training Missions */}
       <Tab.Screen
         name="Menu"
         component={MenuStackNavigator}
         options={{
-          tabBarIcon: ({ focused, color, size }) => (
+          tabBarIcon: ({ focused, color }) => (
             <View style={styles.tabIconContainer}>
               <Ionicons
                 name={focused ? 'school' : 'school-outline'}
-                size={20}
+                size={28}
                 color={color}
               />
               {focused && <View style={styles.tabBarIndicator} />}
@@ -96,32 +77,34 @@ export default function TabNavigator({ session }) {
         }}
       />
       
-      {/* Cart - Preparedness Tools (CENTER - FLOATING BUTTON) */}
+      {/* Cart - Preparedness Tools */}
       <Tab.Screen
         name="Cart"
         component={CartScreen}
         options={{
           tabBarIcon: ({ focused, color }) => (
-            <Ionicons
-              name="checkmark-circle"
-              size={26}
-              color="white"
-            />
+            <View style={styles.tabIconContainer}>
+              <Ionicons
+                name={focused ? 'checkmark-circle' : 'checkmark-circle-outline'}
+                size={28}
+                color={color}
+              />
+              {focused && <View style={styles.tabBarIndicator} />}
+            </View>
           ),
-          tabBarButton: (props) => <CustomTabBarButton {...props} />,
         }}
       />
       
-      {/* Like - Local Resources */}
+      {/* Local Resources */}
       <Tab.Screen
         name="LocalResources"
         component={LocalResourcesScreen}
         options={{
-          tabBarIcon: ({ focused, color, size }) => (
+          tabBarIcon: ({ focused, color }) => (
             <View style={styles.tabIconContainer}>
               <Ionicons
                 name={focused ? 'location' : 'location-outline'}
-                size={24}
+                size={28}
                 color={color}
               />
               {focused && <View style={styles.tabBarIndicator} />}
@@ -134,11 +117,11 @@ export default function TabNavigator({ session }) {
       <Tab.Screen
         name="Profile"
         options={{
-          tabBarIcon: ({ focused, color, size }) => (
+          tabBarIcon: ({ focused, color }) => (
             <View style={styles.tabIconContainer}>
               <Ionicons
                 name={focused ? 'person' : 'person-outline'}
-                size={24}
+                size={28}
                 color={color}
               />
               {focused && <View style={styles.tabBarIndicator} />}
@@ -146,7 +129,6 @@ export default function TabNavigator({ session }) {
           ),
         }}
       >
-        {/*session data is passed to profile screen as a prop*/}
         {(props) => <ProfileScreen {...props} session={session} />}
       </Tab.Screen>
     </Tab.Navigator>
@@ -154,38 +136,18 @@ export default function TabNavigator({ session }) {
 }
 
 const styles = StyleSheet.create({
-  customButtonContainer: {
-    top: -20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  customButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: {
-      width: 0,
-      height: 5,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
   tabIconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
+    width: 50,
+    height: 50,
   },
   tabBarIndicator: {
     position: 'absolute',
     bottom: -15,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    height: 3,
+    width: 30,
     backgroundColor: colors.primary,
+    borderRadius: 2,
   },
 });
