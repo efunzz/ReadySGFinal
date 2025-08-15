@@ -6,10 +6,10 @@ import { colors } from '../constants/theme';
 
 // Import screens
 import HomeScreen from '../screens/HomeScreen';
-import MenuStackNavigator from '../navigation/MenuStackNavigator'; // Changed this line!
+import MenuStackNavigator from '../navigation/MenuStackNavigator';
 import CartScreen from '../screens/CartScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import LocalResourcesScreen from '../screens/LocalResourcesScreen';
+import LocalResourcesScreen from '../screens/LocalResourcesScreen'; 
 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
