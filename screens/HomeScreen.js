@@ -1,7 +1,108 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
+import { supabase } from '../lib/supabase';
+import * as Location from 'expo-location';
 
 export default function HomeScreen({ navigation }) {
+  const [userName, setUserName] = useState('Guest');
+  const [userLocation, setUserLocation] = useState('Singapore');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchUserData();
+    getCurrentLocation();
+  }, []);
+
+  const fetchUserData = async () => {
+    try {
+      console.log('👤 Fetching user data...');
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        console.log('✅ User found:', user.email);
+        
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('full_name, username')
+          .eq('id', user.id)
+          .single();
+        
+        if (error) {
+          console.log('⚠️ Profile query error:', error);
+        }
+        
+        console.log('📋 Profile data:', profile);
+        
+        if (profile?.full_name) {
+          setUserName(profile.full_name);
+          console.log('✅ Using full_name:', profile.full_name);
+        } else if (profile?.username) {
+          setUserName(profile.username);
+          console.log('✅ Using username:', profile.username);
+        } else {
+          const emailName = user.email?.split('@')[0] || 'User';
+          const formattedName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+          setUserName(formattedName);
+          console.log('✅ Using email fallback:', formattedName);
+        }
+      } else {
+        console.log('❌ No user found');
+        setUserName('Guest');
+      }
+    } catch (error) {
+      console.log('❌ Error fetching user data:', error);
+      setUserName('User');
+    }
+    setLoading(false);
+  };
+
+  const getCurrentLocation = async () => {
+    try {
+      console.log('🗺️ Requesting location permission...');
+      
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('❌ Location permission denied');
+        setUserLocation('Singapore');
+        return;
+      }
+
+      console.log('✅ Location permission granted');
+      
+      let location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      
+      console.log('📍 Coordinates:', location.coords.latitude, location.coords.longitude);
+      
+      let reverseGeocode = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+      
+      if (reverseGeocode.length > 0) {
+        const address = reverseGeocode[0];
+        console.log('🏠 Address details:', address);
+        
+        const area = address.district || address.subregion || address.city || 'Singapore';
+        const locationString = `${area}, Singapore`;
+        setUserLocation(locationString);
+        console.log('✅ Final location:', locationString);
+      }
+      
+    } catch (error) {
+      console.log('❌ Location error:', error);
+      setUserLocation('Singapore');
+    }
+  };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
   const navigateToTab = (tabName) => {
     navigation.navigate(tabName);
   };
@@ -14,189 +115,109 @@ export default function HomeScreen({ navigation }) {
   });
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.greeting}>Good Morning, James!</Text>
-        <Text style={styles.date}>{currentDate}</Text>
-        <Text style={styles.location}>📍 Toa Payoh, Singapore</Text>
-      </View>
-
-      {/* Weather Alert Card */}
-      <View style={styles.alertCard}>
-        <View style={styles.alertHeader}>
-          <Text style={styles.alertIcon}>⛈️</Text>
-          <View style={styles.alertContent}>
-            <Text style={styles.alertTitle}>Weather Alert</Text>
-            <Text style={styles.alertStatus}>Thunderstorm Warning</Text>
-          </View>
-          <View style={styles.alertBadge}>
-            <Text style={styles.alertBadgeText}>ACTIVE</Text>
-          </View>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Header with dynamic user data */}
+        <View style={styles.header}>
+          <Text style={styles.greeting}>
+            {getGreeting()}, {loading ? '...' : userName}!
+          </Text>
+          <Text style={styles.date}>{currentDate}</Text>
+          <Text style={styles.location}>📍 {userLocation}</Text>
         </View>
-        <Text style={styles.alertDescription}>
-          Heavy rain and thunderstorms expected from 2-6 PM today. Stay indoors and avoid flood-prone areas.
-        </Text>
-      </View>
+        
+        <View style={styles.headerSpacer} />
 
-      {/* Quick Actions Grid */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.quickActionsGrid}>
-          <TouchableOpacity 
-            style={styles.quickActionCard}
-            onPress={() => navigateToTab('Menu')}
-          >
-            <Text style={styles.quickActionIcon}>🎯</Text>
-            <Text style={styles.quickActionTitle}>Learn</Text>
-            <Text style={styles.quickActionSubtitle}>Emergency Training</Text>
-          </TouchableOpacity>
+        {/* Quick Actions Grid */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.quickActionsGrid}>
+            <TouchableOpacity 
+              style={styles.quickActionCard}
+              onPress={() => navigateToTab('Menu')}
+            >
+              <Text style={styles.quickActionIcon}>🎯</Text>
+              <Text style={styles.quickActionTitle}>Learn</Text>
+              <Text style={styles.quickActionSubtitle}>Emergency Training</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.quickActionCard}
-            onPress={() => navigateToTab('Like')}
-          >
-            <Text style={styles.quickActionIcon}>🏠</Text>
-            <Text style={styles.quickActionTitle}>Resources</Text>
-            <Text style={styles.quickActionSubtitle}>Find Shelters</Text>
-          </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.quickActionCard}
+              onPress={() => navigateToTab('LocalResources')}
+            >
+              <Text style={styles.quickActionIcon}>🏠</Text>
+              <Text style={styles.quickActionTitle}>Resources</Text>
+              <Text style={styles.quickActionSubtitle}>Find Shelters</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.quickActionCard}
-            onPress={() => navigateToTab('Cart')}
-          >
-            <Text style={styles.quickActionIcon}>✅</Text>
-            <Text style={styles.quickActionTitle}>Tools</Text>
-            <Text style={styles.quickActionSubtitle}>Check Preparedness</Text>
-          </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.quickActionCard}
+              onPress={() => navigateToTab('Cart')}
+            >
+              <Text style={styles.quickActionIcon}>✅</Text>
+              <Text style={styles.quickActionTitle}>Tools</Text>
+              <Text style={styles.quickActionSubtitle}>Check Preparedness</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.quickActionCard}
-            onPress={() => navigateToTab('Profile')}
-          >
-            <Text style={styles.quickActionIcon}>👤</Text>
-            <Text style={styles.quickActionTitle}>Profile</Text>
-            <Text style={styles.quickActionSubtitle}>View Progress</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Today's Safety Tip */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Today's Safety Tip</Text>
-        <View style={styles.tipCard}>
-          <Text style={styles.tipIcon}>💡</Text>
-          <View style={styles.tipContent}>
-            <Text style={styles.tipTitle}>Flash Flood Safety</Text>
-            <Text style={styles.tipDescription}>
-              Never drive through flooded roads. Just 6 inches of moving water can knock you down, and 2 feet can carry away your vehicle.
-            </Text>
+            <TouchableOpacity 
+              style={styles.quickActionCard}
+              onPress={() => navigateToTab('Profile')}
+            >
+              <Text style={styles.quickActionIcon}>👤</Text>
+              <Text style={styles.quickActionTitle}>Profile</Text>
+              <Text style={styles.quickActionSubtitle}>View Progress</Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </View>
 
-      {/* Preparedness Overview */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Your Preparedness</Text>
-        <View style={styles.preparednessCard}>
-          <View style={styles.preparednessHeader}>
-            <Text style={styles.preparednessScore}>85%</Text>
-            <View style={styles.preparednessInfo}>
-              <Text style={styles.preparednessTitle}>Overall Readiness</Text>
-              <Text style={styles.preparednessSubtitle}>You're well prepared! 🎉</Text>
+        {/* Today's Safety Tip */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Today's Safety Tip</Text>
+          <View style={styles.tipCard}>
+            <Text style={styles.tipIcon}>💡</Text>
+            <View style={styles.tipContent}>
+              <Text style={styles.tipTitle}>Flash Flood Safety</Text>
+              <Text style={styles.tipDescription}>
+                Never drive through flooded roads. Just 6 inches of moving water can knock you down, and 2 feet can carry away your vehicle.
+              </Text>
             </View>
           </View>
-          
-          <View style={styles.preparednessBreakdown}>
-            <View style={styles.preparednessItem}>
-              <Text style={styles.preparednessLabel}>Emergency Kit</Text>
-              <View style={styles.progressBarContainer}>
-                <View style={[styles.progressBar, { width: '85%' }]} />
-              </View>
-              <Text style={styles.progressText}>85%</Text>
-            </View>
+        </View>
+
+        {/* Emergency Contacts */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Emergency Contacts</Text>
+          <View style={styles.emergencyContacts}>
+            <TouchableOpacity style={styles.emergencyButton}>
+              <Text style={styles.emergencyButtonText}>🚨 Emergency Services</Text>
+              <Text style={styles.emergencyNumber}>995</Text>
+            </TouchableOpacity>
             
-            <View style={styles.preparednessItem}>
-              <Text style={styles.preparednessLabel}>Knowledge</Text>
-              <View style={styles.progressBarContainer}>
-                <View style={[styles.progressBar, { width: '92%' }]} />
-              </View>
-              <Text style={styles.progressText}>92%</Text>
-            </View>
-            
-            <View style={styles.preparednessItem}>
-              <Text style={styles.preparednessLabel}>Training</Text>
-              <View style={styles.progressBarContainer}>
-                <View style={[styles.progressBar, { width: '78%' }]} />
-              </View>
-              <Text style={styles.progressText}>78%</Text>
-            </View>
+            <TouchableOpacity style={styles.emergencyButton}>
+              <Text style={styles.emergencyButtonText}>🚑 Non-Emergency</Text>
+              <Text style={styles.emergencyNumber}>1777</Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </View>
 
-      {/* Recent Activity */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Recent Activity</Text>
-        <View style={styles.activityList}>
-          <View style={styles.activityItem}>
-            <Text style={styles.activityIcon}>🏆</Text>
-            <View style={styles.activityContent}>
-              <Text style={styles.activityTitle}>Achievement Unlocked!</Text>
-              <Text style={styles.activityDesc}>Completed "Flash Flood Safety" mission</Text>
-              <Text style={styles.activityTime}>2 hours ago</Text>
-            </View>
-          </View>
-          
-          <View style={styles.activityItem}>
-            <Text style={styles.activityIcon}>✅</Text>
-            <View style={styles.activityContent}>
-              <Text style={styles.activityTitle}>Kit Updated</Text>
-              <Text style={styles.activityDesc}>Added flashlight to emergency kit</Text>
-              <Text style={styles.activityTime}>Yesterday</Text>
-            </View>
-          </View>
-          
-          <View style={styles.activityItem}>
-            <Text style={styles.activityIcon}>📚</Text>
-            <View style={styles.activityContent}>
-              <Text style={styles.activityTitle}>Quiz Completed</Text>
-              <Text style={styles.activityDesc}>Scored 95% on preparedness quiz</Text>
-              <Text style={styles.activityTime}>3 days ago</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      {/* Emergency Contacts */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Emergency Contacts</Text>
-        <View style={styles.emergencyContacts}>
-          <TouchableOpacity style={styles.emergencyButton}>
-            <Text style={styles.emergencyButtonText}>🚨 Emergency Services</Text>
-            <Text style={styles.emergencyNumber}>995</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.emergencyButton}>
-            <Text style={styles.emergencyButtonText}>🚑 Non-Emergency</Text>
-            <Text style={styles.emergencyNumber}>1777</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.bottomPadding} />
-    </ScrollView>
+        <View style={styles.bottomPadding} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
   container: {
     flex: 1,
     backgroundColor: '#f0f4f8',
   },
   header: {
     backgroundColor: 'white',
-    paddingTop: 60,
+    paddingTop: 20,
     paddingBottom: 24,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 24,
@@ -217,51 +238,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#a0aec0',
   },
-  alertCard: {
-    backgroundColor: '#fff8f1',
-    margin: 20,
-    borderRadius: 16,
-    padding: 20,
-    borderLeftWidth: 4,
-    borderLeftColor: '#f59e0b',
-  },
-  alertHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  alertIcon: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  alertContent: {
-    flex: 1,
-  },
-  alertTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#92400e',
-    marginBottom: 2,
-  },
-  alertStatus: {
-    fontSize: 14,
-    color: '#b45309',
-  },
-  alertBadge: {
-    backgroundColor: '#f59e0b',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  alertBadgeText: {
-    fontSize: 10,
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  alertDescription: {
-    fontSize: 14,
-    color: '#92400e',
-    lineHeight: 20,
+  headerSpacer: {
+    height: 24,
   },
   section: {
     paddingHorizontal: 20,
@@ -330,100 +308,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#4a5568',
     lineHeight: 20,
-  },
-  preparednessCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-  },
-  preparednessHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  preparednessScore: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#10b981',
-    marginRight: 16,
-  },
-  preparednessInfo: {
-    flex: 1,
-  },
-  preparednessTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2d3748',
-    marginBottom: 4,
-  },
-  preparednessSubtitle: {
-    fontSize: 14,
-    color: '#718096',
-  },
-  preparednessBreakdown: {
-    gap: 16,
-  },
-  preparednessItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  preparednessLabel: {
-    fontSize: 14,
-    color: '#4a5568',
-    width: 80,
-  },
-  progressBarContainer: {
-    flex: 1,
-    height: 8,
-    backgroundColor: '#e2e8f0',
-    borderRadius: 4,
-    marginHorizontal: 12,
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: '#10b981',
-    borderRadius: 4,
-  },
-  progressText: {
-    fontSize: 12,
-    color: '#718096',
-    width: 40,
-    textAlign: 'right',
-  },
-  activityList: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-  },
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  activityIcon: {
-    fontSize: 20,
-    marginRight: 16,
-    marginTop: 2,
-  },
-  activityContent: {
-    flex: 1,
-  },
-  activityTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#2d3748',
-    marginBottom: 2,
-  },
-  activityDesc: {
-    fontSize: 12,
-    color: '#718096',
-    marginBottom: 4,
-  },
-  activityTime: {
-    fontSize: 10,
-    color: '#a0aec0',
   },
   emergencyContacts: {
     gap: 12,
