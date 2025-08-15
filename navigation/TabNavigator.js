@@ -9,7 +9,7 @@ import HomeScreen from '../screens/HomeScreen';
 import MenuStackNavigator from '../navigation/MenuStackNavigator'; // Changed this line!
 import CartScreen from '../screens/CartScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import LikeScreen from '../screens/LikeScreen';
+import LocalResourcesScreen from '../screens/LocalResourcesScreen';
 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
@@ -114,8 +114,8 @@ export default function TabNavigator({ session }) {
       
       {/* Like - Local Resources */}
       <Tab.Screen
-        name="Like"
-        component={LikeScreen}
+        name="LocalResources"
+        component={LocalResourcesScreen}
         options={{
           tabBarIcon: ({ focused, color, size }) => (
             <View style={styles.tabIconContainer}>
