@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
 import { supabase } from '../lib/supabase';
 import * as Location from 'expo-location';
+import { colors } from '../constants/theme'; // Import your theme colors
 
 export default function HomeScreen({ navigation }) {
   const [userName, setUserName] = useState('Guest');
@@ -116,16 +117,16 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      {/* Header with dynamic user data */}
+      <View style={styles.header}>
+        <Text style={styles.greeting}>
+          {getGreeting()}, {loading ? '...' : userName}!
+        </Text>
+        <Text style={styles.date}>{currentDate}</Text>
+        <Text style={styles.location}>📍 {userLocation}</Text>
+      </View>
+      
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Header with dynamic user data */}
-        <View style={styles.header}>
-          <Text style={styles.greeting}>
-            {getGreeting()}, {loading ? '...' : userName}!
-          </Text>
-          <Text style={styles.date}>{currentDate}</Text>
-          <Text style={styles.location}>📍 {userLocation}</Text>
-        </View>
-        
         <View style={styles.headerSpacer} />
 
         {/* Quick Actions Grid */}
@@ -133,7 +134,7 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
             <TouchableOpacity 
-              style={styles.quickActionCard}
+              style={[styles.quickActionCard, styles.learnCard]}
               onPress={() => navigateToTab('Menu')}
             >
               <Text style={styles.quickActionIcon}>🎯</Text>
@@ -142,7 +143,7 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={styles.quickActionCard}
+              style={[styles.quickActionCard, styles.resourcesCard]}
               onPress={() => navigateToTab('LocalResources')}
             >
               <Text style={styles.quickActionIcon}>🏠</Text>
@@ -151,7 +152,7 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={styles.quickActionCard}
+              style={[styles.quickActionCard, styles.toolsCard]}
               onPress={() => navigateToTab('Cart')}
             >
               <Text style={styles.quickActionIcon}>✅</Text>
@@ -160,7 +161,7 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={styles.quickActionCard}
+              style={[styles.quickActionCard, styles.profileCard]}
               onPress={() => navigateToTab('Profile')}
             >
               <Text style={styles.quickActionIcon}>👤</Text>
@@ -209,47 +210,47 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: colors.primary, // Use your theme color
   },
   container: {
     flex: 1,
-    backgroundColor: '#f0f4f8',
+    backgroundColor: '#f8fafc', // Lighter, cleaner background
   },
   header: {
-    backgroundColor: 'white',
+    backgroundColor: colors.primary, // Match your theme color
     paddingTop: 20,
-    paddingBottom: 24,
+    paddingBottom: 32, // Slightly more padding
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 28, // More rounded
+    borderBottomRightRadius: 28,
   },
   greeting: {
-    fontSize: 24,
+    fontSize: 26, // Slightly bigger
     fontWeight: 'bold',
-    color: '#2d3748',
-    marginBottom: 4,
+    color: 'white', // White text on colored background
+    marginBottom: 6,
   },
   date: {
     fontSize: 16,
-    color: '#718096',
+    color: 'rgba(255,255,255,0.9)', // Semi-transparent white
     marginBottom: 4,
   },
   location: {
     fontSize: 14,
-    color: '#a0aec0',
+    color: 'rgba(255,255,255,0.8)', // More transparent white
   },
   headerSpacer: {
-    height: 24,
+    height: 28, // A bit more spacing
   },
   section: {
     paddingHorizontal: 20,
-    marginBottom: 24,
+    marginBottom: 28, // More spacing between sections
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 22, // Slightly bigger
     fontWeight: 'bold',
-    color: '#2d3748',
-    marginBottom: 16,
+    color: '#1e293b', // Darker for better contrast
+    marginBottom: 18,
   },
   quickActionsGrid: {
     flexDirection: 'row',
@@ -258,67 +259,96 @@ const styles = StyleSheet.create({
   },
   quickActionCard: {
     backgroundColor: 'white',
-    borderRadius: 16,
+    borderRadius: 20, // More rounded
     padding: 20,
     width: '48%',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16, // More spacing
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  // Individual card styles for subtle color accents
+  learnCard: {
+    borderTopWidth: 4,
+    borderTopColor: '#3b82f6', // Blue
+  },
+  resourcesCard: {
+    borderTopWidth: 4,
+    borderTopColor: '#10b981', // Green
+  },
+  toolsCard: {
+    borderTopWidth: 4,
+    borderTopColor: colors.primary, // Your theme color
+  },
+  profileCard: {
+    borderTopWidth: 4,
+    borderTopColor: '#8b5cf6', // Purple
   },
   quickActionIcon: {
-    fontSize: 32,
-    marginBottom: 8,
+    fontSize: 36, // Bigger icons
+    marginBottom: 10,
   },
   quickActionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2d3748',
+    color: '#1e293b', // Darker
     marginBottom: 4,
   },
   quickActionSubtitle: {
     fontSize: 12,
-    color: '#718096',
+    color: '#64748b', // Better contrast
     textAlign: 'center',
   },
   tipCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
+    backgroundColor: '#fef9e7', // Light yellow background
+    borderRadius: 20, // More rounded
     padding: 20,
     flexDirection: 'row',
     alignItems: 'flex-start',
+    borderLeftWidth: 4,
+    borderLeftColor: '#f59e0b', // Orange accent
+    shadowColor: '#f59e0b',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   tipIcon: {
-    fontSize: 24,
+    fontSize: 28, // Bigger
     marginRight: 16,
   },
   tipContent: {
     flex: 1,
   },
   tipTitle: {
-    fontSize: 16,
+    fontSize: 18, // Bigger
     fontWeight: 'bold',
-    color: '#2d3748',
+    color: '#92400e', // Orange-brown to match the theme
     marginBottom: 8,
   },
   tipDescription: {
     fontSize: 14,
-    color: '#4a5568',
+    color: '#78350f', // Darker for better readability
     lineHeight: 20,
   },
   emergencyContacts: {
-    gap: 12,
+    gap: 16, // More spacing
   },
   emergencyButton: {
     backgroundColor: '#dc2626',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16, // More rounded
+    padding: 18, // More padding
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    shadowColor: '#dc2626',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   emergencyButtonText: {
     color: 'white',
@@ -327,10 +357,10 @@ const styles = StyleSheet.create({
   },
   emergencyNumber: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 20, // Bigger
     fontWeight: 'bold',
   },
   bottomPadding: {
-    height: 20,
+    height: 100, // More space for floating tab bar
   },
 });
