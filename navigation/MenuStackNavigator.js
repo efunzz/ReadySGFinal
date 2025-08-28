@@ -21,8 +21,9 @@ export default function MenuStackNavigator() {
         name="FlashFloodSimulator" 
         component={FlashFloodSimulator}
         options={{ 
-          headerShown: false // Simulator handles its own header
+          headerShown: false 
         }}
+        
       />
       {/* Add more learning screens here in the future */}
       {/* 

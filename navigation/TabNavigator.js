@@ -12,34 +12,44 @@ import LocalResourcesScreen from '../screens/LocalResourcesScreen';
 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
+
 const Tab = createBottomTabNavigator();
 const { width } = Dimensions.get('window');
 
 export default function TabNavigator({ session }) {
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route, navigation }) => ({
         headerShown: false,
         tabBarShowLabel: false,
-        tabBarStyle: {
-          position: 'absolute',
-          bottom: 20,
-          left: width * 0.2,  
-          right: width * 0.2, 
-          height: 70,
-          backgroundColor: 'white',
-          borderRadius: 80,  
-          elevation: 8,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.15,
-          shadowRadius: 10,
-          paddingTop: 10,
-          paddingBottom: 10,
-        },
+        tabBarStyle: (() => {
+          // Hide tab bar when in FlashFloodSimulator
+          const routeName = navigation.getState()?.routes[navigation.getState()?.index]?.state?.routes?.[navigation.getState()?.routes[navigation.getState()?.index]?.state?.index]?.name;
+          
+          if (routeName === 'FlashFloodSimulator') {
+            return { display: 'none' };
+          }
+          
+          return {
+            position: 'absolute',
+            bottom: 20,
+            left: width * 0.2,  
+            right: width * 0.2, 
+            height: 70,
+            backgroundColor: 'white',
+            borderRadius: 80,  
+            elevation: 8,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.15,
+            shadowRadius: 10,
+            paddingTop: 10,
+            paddingBottom: 10,
+          };
+        })(),
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: '#9e9e9e',
-      }}
+      })}
     >
       {/* Home - Dashboard */}
       <Tab.Screen
