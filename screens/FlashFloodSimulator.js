@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Alert, ImageBackground, Dimensions } from 'react-native';
 import { colors, spacing, borderRadius, fontSize } from '../constants/theme';
+import * as Haptics from 'expo-haptics';
+import { Audio } from 'expo-av';
 
 const { width, height } = Dimensions.get('window');
 
@@ -13,6 +15,14 @@ export default function FlashFloodSimulator({ navigation, route }) {
   const [feedbackText, setFeedbackText] = useState('');
   const [isCorrect, setIsCorrect] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(1));
+  
+  // Sound effects
+  const [sounds, setSounds] = useState({
+    buttonPress: null,
+    correct: null,
+    incorrect: null,
+    transition: null
+  });
 
   const scenarios = {
     before: {
@@ -138,7 +148,22 @@ export default function FlashFloodSimulator({ navigation, route }) {
   };
 
   const currentScenario = scenarios[scenario];
-  const currentStepData = currentScenario.steps[currentStep];
+  const currentStepData = currentScenario?.steps[currentStep];
+
+  // Safety check - if data not loaded properly, show loading or go back
+  if (!currentScenario || !currentStepData) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: 'white', fontSize: 18 }}>Loading scenario...</Text>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backButtonText}>← Back to Menu</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   useEffect(() => {
     // Start each scene with the scene phase
@@ -148,30 +173,114 @@ export default function FlashFloodSimulator({ navigation, route }) {
       duration: 500,
       useNativeDriver: true,
     }).start();
+    
+    // Play transition sound and light haptic
+    playSound('transition');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }, [currentStep]);
 
+  useEffect(() => {
+    loadSounds();
+    return () => {
+      // Cleanup sounds when component unmounts
+      Object.values(sounds).forEach(sound => {
+        if (sound) {
+          sound.unloadAsync();
+        }
+      });
+    };
+  }, []);
+
+  const loadSounds = async () => {
+    try {
+      // You'll need to add these sound files to your assets folder
+      const buttonPressSound = await Audio.Sound.createAsync(
+        require('../assets/sounds/button-press.mp3')
+      );
+      const correctSound = await Audio.Sound.createAsync(
+        require('../assets/sounds/correct.mp3')
+      );
+      const incorrectSound = await Audio.Sound.createAsync(
+        require('../assets/sounds/incorrect.mp3')
+      );
+      const transitionSound = await Audio.Sound.createAsync(
+        require('../assets/sounds/transition.mp3')
+      );
+
+      setSounds({
+        buttonPress: buttonPressSound.sound,
+        correct: correctSound.sound,
+        incorrect: incorrectSound.sound,
+        transition: transitionSound.sound
+      });
+    } catch (error) {
+      console.log('Error loading sounds:', error);
+    }
+  };
+
+  const playSound = async (soundType) => {
+    try {
+      const sound = sounds[soundType];
+      if (sound) {
+        await sound.replayAsync();
+      }
+    } catch (error) {
+      console.log('Error playing sound:', error);
+    }
+  };
+
   const handleNext = () => {
+    // Button press feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    playSound('buttonPress');
     setGamePhase('question');
   };
 
+  const [isAdvancing, setIsAdvancing] = useState(false);
+
   const handleChoice = (choice) => {
+    if (isAdvancing) return; // Prevent double-taps
+    
+    console.log('handleChoice called, current step:', currentStep);
+    setIsAdvancing(true);
+    
+    // Choice selection feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    playSound('buttonPress');
+    
     setIsCorrect(choice.correct);
     setFeedbackText(choice.feedback);
     setGamePhase('feedback');
 
     if (choice.correct) {
       setScore(prev => prev + 10);
+      // Success haptic and sound
+      setTimeout(() => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        playSound('correct');
+      }, 200);
     } else {
       setLives(prev => prev - 1);
+      // Error haptic and sound
+      setTimeout(() => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        playSound('incorrect');
+      }, 200);
     }
 
     // Auto-advance after feedback
     setTimeout(() => {
+      console.log('Auto-advance triggered, advancing from step:', currentStep);
       if (currentStep < currentScenario.steps.length - 1) {
-        setCurrentStep(prev => prev + 1);
+        setCurrentStep(prev => {
+          const nextStep = prev + 1;
+          console.log('Setting step to:', nextStep);
+          return nextStep;
+        });
       } else {
         showFinalResults();
       }
+      setIsAdvancing(false); // Re-enable after advancement
     }, 3000);
   };
 
