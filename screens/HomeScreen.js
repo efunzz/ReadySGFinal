@@ -210,47 +210,45 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.primary, // Use your theme color
+    backgroundColor: colors.background, // #f0f4f8 - matches status bar area
   },
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc', // Lighter, cleaner background
+    backgroundColor: colors.background, // #f0f4f8
   },
   header: {
-    backgroundColor: colors.primary, // Match your theme color
+    backgroundColor: colors.background, // #f0f4f8 - same grey as content  
     paddingTop: 20,
-    paddingBottom: 32, // Slightly more padding
+    paddingBottom: 24,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 28, // More rounded
-    borderBottomRightRadius: 28,
   },
   greeting: {
-    fontSize: 26, // Slightly bigger
+    fontSize: 24, // Consistent with other screens
     fontWeight: 'bold',
-    color: 'white', // White text on colored background
+    color: colors.text.primary, // Black text like other screens
     marginBottom: 6,
   },
   date: {
     fontSize: 16,
-    color: 'rgba(255,255,255,0.9)', // Semi-transparent white
+    color: colors.text.light, // Grey text
     marginBottom: 4,
   },
   location: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.8)', // More transparent white
+    color: colors.text.light, // Grey text
   },
   headerSpacer: {
-    height: 28, // A bit more spacing
+    height: 24, // Consistent spacing
   },
   section: {
     paddingHorizontal: 20,
-    marginBottom: 28, // More spacing between sections
+    marginBottom: 24, // Consistent spacing
   },
   sectionTitle: {
-    fontSize: 22, // Slightly bigger
+    fontSize: 20, // Consistent with other screens
     fontWeight: 'bold',
-    color: '#1e293b', // Darker for better contrast
-    marginBottom: 18,
+    color: colors.text.primary, // #2d3748
+    marginBottom: 16,
   },
   quickActionsGrid: {
     flexDirection: 'row',
@@ -258,97 +256,94 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   quickActionCard: {
-    backgroundColor: 'white',
-    borderRadius: 20, // More rounded
+    backgroundColor: colors.white,
+    borderRadius: 16, // Consistent with theme
     padding: 20,
     width: '48%',
     alignItems: 'center',
-    marginBottom: 16, // More spacing
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    marginBottom: 16,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+    borderLeftWidth: 4, // Consistent with other cards
   },
-  // Individual card styles for subtle color accents
+  // Individual card styles using theme colors
   learnCard: {
-    borderTopWidth: 4,
-    borderTopColor: '#3b82f6', // Blue
+    borderLeftColor: colors.primary, // #ff6b6b
   },
   resourcesCard: {
-    borderTopWidth: 4,
-    borderTopColor: '#10b981', // Green
+    borderLeftColor: colors.secondary, // #10b981
   },
   toolsCard: {
-    borderTopWidth: 4,
-    borderTopColor: colors.primary, // Your theme color
+    borderLeftColor: colors.status.warning, // #f59e0b
   },
   profileCard: {
-    borderTopWidth: 4,
-    borderTopColor: '#8b5cf6', // Purple
+    borderLeftColor: '#8b5cf6', // Keep purple for variety
   },
   quickActionIcon: {
-    fontSize: 36, // Bigger icons
+    fontSize: 32,
     marginBottom: 10,
   },
   quickActionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#1e293b', // Darker
+    color: colors.text.primary, // #2d3748
     marginBottom: 4,
   },
   quickActionSubtitle: {
     fontSize: 12,
-    color: '#64748b', // Better contrast
+    color: colors.text.light, // #718096
     textAlign: 'center',
   },
   tipCard: {
-    backgroundColor: '#fef9e7', // Light yellow background
-    borderRadius: 20, // More rounded
+    backgroundColor: colors.primaryLight, // #fff5f5 - light version of primary
+    borderRadius: 16, // Consistent
     padding: 20,
     flexDirection: 'row',
     alignItems: 'flex-start',
     borderLeftWidth: 4,
-    borderLeftColor: '#f59e0b', // Orange accent
-    shadowColor: '#f59e0b',
+    borderLeftColor: colors.status.warning, // #f59e0b
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
   tipIcon: {
-    fontSize: 28, // Bigger
+    fontSize: 24,
     marginRight: 16,
   },
   tipContent: {
     flex: 1,
   },
   tipTitle: {
-    fontSize: 18, // Bigger
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#92400e', // Orange-brown to match the theme
+    color: colors.text.primary, // #2d3748
     marginBottom: 8,
   },
   tipDescription: {
     fontSize: 14,
-    color: '#78350f', // Darker for better readability
+    color: colors.text.secondary, // #4a5568
     lineHeight: 20,
   },
   emergencyContacts: {
-    gap: 16, // More spacing
+    gap: 12, // Consistent spacing
   },
   emergencyButton: {
-    backgroundColor: '#dc2626',
-    borderRadius: 16, // More rounded
-    padding: 18, // More padding
+    backgroundColor: colors.status.error, // #dc2626 - consistent red
+    borderRadius: 12, // Consistent
+    padding: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: '#dc2626',
+    shadowColor: colors.status.error,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 2,
   },
   emergencyButtonText: {
     color: 'white',
@@ -357,10 +352,10 @@ const styles = StyleSheet.create({
   },
   emergencyNumber: {
     color: 'white',
-    fontSize: 20, // Bigger
+    fontSize: 18,
     fontWeight: 'bold',
   },
   bottomPadding: {
-    height: 100, // More space for floating tab bar
+    height: 100,
   },
 });
