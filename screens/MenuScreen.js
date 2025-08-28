@@ -4,10 +4,10 @@ import { colors, spacing, borderRadius, fontSize } from '../constants/theme';
 
 export default function MenuScreen({ navigation }) {
   const handleCardPress = (cardTitle) => {
-    // Map card titles to scenario types
+    // Map card titles to scenario types - keeping same navigation to FlashFloodSimulator
     const scenarioMap = {
       'Before Flash Flood': 'before',
-      'During Flash Flood': 'during',
+      'During Flash Flood': 'during', 
       'After Flash Flood': 'after'
     };
 
@@ -24,7 +24,7 @@ export default function MenuScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.pageTitle}>Emergency Learning</Text>
-      <Text style={styles.pageSubtitle}>Interactive Flash Flood Training</Text>
+      <Text style={styles.pageSubtitle}>Interactive Safety Training with James</Text>
       
       <ScrollView 
         style={styles.scrollContainer}
@@ -43,8 +43,8 @@ export default function MenuScreen({ navigation }) {
             <Text style={styles.cardLevel}>🎮 Interactive</Text>
           </View>
           <Text style={styles.cardDescription}>
-            🎯 Help James prepare for potential flash floods! Learn about emergency kits, 
-            evacuation routes, and early warning signs through interactive scenarios.
+            🎯 Help James prepare for potential flash floods following SCDF protocols! Learn about Ready Bag preparation, 
+            emergency supplies, and early warning response through interactive scenarios.
           </Text>
           <View style={styles.cardFooter}>
             <View style={styles.cardStats}>
@@ -67,8 +67,8 @@ export default function MenuScreen({ navigation }) {
             <Text style={styles.cardLevel}>🎮 Interactive</Text>
           </View>
           <Text style={styles.cardDescription}>
-            🚨 James is caught in a flash flood emergency! Make critical decisions about 
-            evacuation, safety, and emergency communication in this high-stakes simulation.
+            🚨 James faces a flash flood emergency! Make critical decisions about evacuation, 
+            vehicle safety, emergency calls (995), and rescue procedures based on SCDF guidelines.
           </Text>
           <View style={styles.cardFooter}>
             <View style={styles.cardStats}>
@@ -91,8 +91,8 @@ export default function MenuScreen({ navigation }) {
             <Text style={styles.cardLevel}>🎮 Interactive</Text>
           </View>
           <Text style={styles.cardDescription}>
-            🏠 The flood has passed. Guide James through safe recovery: water safety, 
-            property assessment, health precautions, and community recovery steps.
+            🏠 The flood has passed. Guide James through safe recovery: electrical safety, 
+            structural damage assessment, and contamination protocols per SCDF procedures.
           </Text>
           <View style={styles.cardFooter}>
             <View style={styles.cardStats}>
@@ -103,34 +103,66 @@ export default function MenuScreen({ navigation }) {
           </View>
         </TouchableOpacity>
 
-        {/* Coming Soon Cards */}
-        <View style={[styles.card, styles.comingSoonCard]}>
+        {/* Card 4: Fire Safety & Evacuation - SCDF Coverage */}
+        <TouchableOpacity 
+          style={[styles.card, styles.plannedCard]}
+          onPress={() => handleCardPress('Fire Safety & Evacuation')}
+          activeOpacity={0.8}
+        >
           <View style={styles.cardHeader}>
             <Text style={styles.cardNumber}>04</Text>
-            <Text style={styles.cardTitle}>Earthquake Preparedness</Text>
-            <Text style={styles.cardLevel}>🚧 Coming Soon</Text>
+            <Text style={styles.cardTitle}>Fire Safety & Evacuation</Text>
+            <Text style={styles.cardLevel}>🚧 Planned</Text>
           </View>
           <Text style={styles.cardDescription}>
-            Learn earthquake safety through interactive scenarios with James.
+            🔥 Learn fire prevention, extinguisher use (P.A.S.S. method), smoke evacuation, 
+            gas leak response, and EV fire safety with interactive scenarios.
           </Text>
           <View style={styles.cardFooter}>
-            <Text style={styles.comingSoonText}>Coming Soon</Text>
+            <Text style={styles.plannedText}>SCDF Handbook Coverage Available</Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
-        <View style={[styles.card, styles.comingSoonCard]}>
+        {/* Card 5: First Aid & Medical Emergencies - SCDF Coverage */}
+        <TouchableOpacity 
+          style={[styles.card, styles.plannedCard]}
+          onPress={() => handleCardPress('First Aid & Medical')}
+          activeOpacity={0.8}
+        >
           <View style={styles.cardHeader}>
             <Text style={styles.cardNumber}>05</Text>
-            <Text style={styles.cardTitle}>Fire Safety</Text>
-            <Text style={styles.cardLevel}>🚧 Coming Soon</Text>
+            <Text style={styles.cardTitle}>First Aid & Medical</Text>
+            <Text style={styles.cardLevel}>🚧 Planned</Text>
           </View>
           <Text style={styles.cardDescription}>
-            Master fire safety and evacuation procedures through gamified learning.
+            🚑 Practice CPR, AED usage, treating bleeding, fractures, burns, choking, 
+            and stroke response through hands-on simulations.
           </Text>
           <View style={styles.cardFooter}>
-            <Text style={styles.comingSoonText}>Coming Soon</Text>
+            <Text style={styles.plannedText}>SCDF Handbook Coverage Available</Text>
           </View>
-        </View>
+        </TouchableOpacity>
+
+        {/* Card 6: Natural Disasters - SCDF Coverage */}
+        <TouchableOpacity 
+          style={[styles.card, styles.plannedCard]}
+          onPress={() => handleCardPress('Natural Disasters')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardNumber}>06</Text>
+            <Text style={styles.cardTitle}>Natural Disasters</Text>
+            <Text style={styles.cardLevel}>🚧 Planned</Text>
+          </View>
+          <Text style={styles.cardDescription}>
+            🌪️ Navigate earthquakes, tremors, landslides, tsunamis, typhoons, lightning, 
+            and power outages using official SCDF emergency protocols.
+          </Text>
+          <View style={styles.cardFooter}>
+            <Text style={styles.plannedText}>SCDF Handbook Coverage Available</Text>
+          </View>
+        </TouchableOpacity>
+
       </ScrollView>
     </View>
   );
@@ -178,9 +210,9 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: colors.primary,
   },
-  comingSoonCard: {
-    opacity: 0.6,
-    borderLeftColor: '#9ca3af',
+  plannedCard: {
+    opacity: 0.85,
+    borderLeftColor: colors.secondary, // Green for planned content
   },
   cardHeader: {
     flexDirection: 'row',
@@ -191,7 +223,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.title,
     fontWeight: 'bold',
     color: colors.primary,
-    backgroundColor: '#fff5f5',
+    backgroundColor: colors.primaryLight,
     width: 40,
     height: 40,
     textAlign: 'center',
@@ -208,7 +240,7 @@ const styles = StyleSheet.create({
   cardLevel: {
     fontSize: fontSize.sm,
     color: colors.primary,
-    backgroundColor: '#fff5f5',
+    backgroundColor: colors.primaryLight,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -239,9 +271,10 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '600',
   },
-  comingSoonText: {
-    fontSize: fontSize.md,
-    color: '#9ca3af',
+  plannedText: {
+    fontSize: fontSize.sm,
+    color: colors.secondary,
     fontWeight: '600',
+    fontStyle: 'italic',
   },
 });
