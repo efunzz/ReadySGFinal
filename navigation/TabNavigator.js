@@ -6,7 +6,7 @@ import { colors } from '../constants/theme';
 // Import screens
 import HomeScreen from '../screens/HomeScreen';
 import MenuStackNavigator from '../navigation/MenuStackNavigator';
-import CartScreen from '../screens/CartScreen';
+import PreparednessToolsScreen from '../screens/PreparednessToolsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import LocalResourcesScreen from '../screens/LocalResourcesScreen';
 
@@ -89,8 +89,8 @@ export default function TabNavigator({ session }) {
       
       {/* Cart - Preparedness Tools */}
       <Tab.Screen
-        name="Cart"
-        component={CartScreen}
+        name="PreparednessTools"
+        component={PreparednessToolsScreen}
         options={{
           tabBarIcon: ({ focused, color }) => (
             <View style={styles.tabIconContainer}>
