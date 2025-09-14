@@ -1,170 +1,198 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius, fontSize } from '../constants/theme';
 
 export default function MenuScreen({ navigation }) {
   const handleCardPress = (cardTitle) => {
-    // Map card titles to scenario types - keeping same navigation to FlashFloodSimulator
     const scenarioMap = {
-      'Before Flash Flood': 'before',
-      'During Flash Flood': 'during', 
-      'After Flash Flood': 'after'
+      'Flash Floods': 'FlashFloodSimulator',
+      'Fire Safety': 'FireSafetySimulator',
+      'First Aid & Medical': 'FirstAidSimulator',
+      'Natural Disasters': 'NaturalDisasterSimulator'
     };
 
-    const scenarioType = scenarioMap[cardTitle];
+    const simulator = scenarioMap[cardTitle];
     
-    if (scenarioType) {
-      // Navigate to FlashFloodSimulator with scenario parameter
-      navigation.navigate('FlashFloodSimulator', { scenario: scenarioType });
+    if (simulator === 'FlashFloodSimulator') {
+      navigation.navigate('FlashFloodSimulator', { scenario: 'before' });
     } else {
-      console.log(`Pressed: ${cardTitle}`);
+      console.log(`Pressed: ${cardTitle} - ${simulator} not implemented yet`);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.pageTitle}>Emergency Learning</Text>
-      <Text style={styles.pageSubtitle}>Interactive Safety Training with James</Text>
+    <ScrollView 
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Header that scrolls with content */}
+      <View style={styles.headerBackground}>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+          <View style={styles.header}>
+            <Text style={styles.appTitle}>Emergency Learning</Text>
+            <Text style={styles.subtitle}>Interactive Safety Training</Text>
+          </View>
+        </SafeAreaView>
+      </View>
       
-      <ScrollView 
-        style={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Card 1: Before Flash Flood */}
-        <TouchableOpacity 
-          style={styles.card}
-          onPress={() => handleCardPress('Before Flash Flood')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardNumber}>01</Text>
-            <Text style={styles.cardTitle}>Before Flash Flood</Text>
-            <Text style={styles.cardLevel}>🎮 Interactive</Text>
-          </View>
-          <Text style={styles.cardDescription}>
-            🎯 Help James prepare for potential flash floods following SCDF protocols! Learn about Ready Bag preparation, 
-            emergency supplies, and early warning response through interactive scenarios.
-          </Text>
-          <View style={styles.cardFooter}>
-            <View style={styles.cardStats}>
-              <Text style={styles.cardStat}>⭐ 3 Scenarios</Text>
-              <Text style={styles.cardStat}>⏱️ 5 min</Text>
+      {/* My Badges Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>My Badges</Text>
+        <View style={styles.badgesContainer}>
+          <Text style={styles.badgesPlaceholder}>Currently no badges</Text>
+          <Text style={styles.badgesSubtext}>Complete courses to receive badges</Text>
+        </View>
+      </View>
+
+      {/* Emergency Training Courses */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Emergency Training Courses</Text>
+        
+        {/* Flash Floods - Available */}
+        <View style={styles.courseCard}>
+          <View style={styles.courseHeader}>
+            <View style={styles.imagePlaceholder}>
+              <Text style={styles.placeholderText}>🌊</Text>
             </View>
-            <Text style={styles.cardAction}>Start Mission →</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Card 2: During Flash Flood */}
-        <TouchableOpacity 
-          style={styles.card}
-          onPress={() => handleCardPress('During Flash Flood')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardNumber}>02</Text>
-            <Text style={styles.cardTitle}>During Flash Flood</Text>
-            <Text style={styles.cardLevel}>🎮 Interactive</Text>
-          </View>
-          <Text style={styles.cardDescription}>
-            🚨 James faces a flash flood emergency! Make critical decisions about evacuation, 
-            vehicle safety, emergency calls (995), and rescue procedures based on SCDF guidelines.
-          </Text>
-          <View style={styles.cardFooter}>
-            <View style={styles.cardStats}>
-              <Text style={styles.cardStat}>⭐ 3 Scenarios</Text>
-              <Text style={styles.cardStat}>⏱️ 5 min</Text>
+            <View style={styles.courseTitleSection}>
+              <Text style={styles.courseTitle}>Flash Floods</Text>
+              <Text style={styles.courseLevel}>🎮 Available</Text>
             </View>
-            <Text style={styles.cardAction}>Start Mission →</Text>
           </View>
-        </TouchableOpacity>
-
-        {/* Card 3: After Flash Flood */}
-        <TouchableOpacity 
-          style={styles.card}
-          onPress={() => handleCardPress('After Flash Flood')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardNumber}>03</Text>
-            <Text style={styles.cardTitle}>After Flash Flood</Text>
-            <Text style={styles.cardLevel}>🎮 Interactive</Text>
-          </View>
-          <Text style={styles.cardDescription}>
-            🏠 The flood has passed. Guide James through safe recovery: electrical safety, 
-            structural damage assessment, and contamination protocols per SCDF procedures.
+          
+          <Text style={styles.courseDescription}>
+            Master flash flood preparedness and response protocols.
           </Text>
-          <View style={styles.cardFooter}>
-            <View style={styles.cardStats}>
-              <Text style={styles.cardStat}>⭐ 3 Scenarios</Text>
-              <Text style={styles.cardStat}>⏱️ 5 min</Text>
+          
+          {/* Progress Bar */}
+          <View style={styles.progressSection}>
+            <View style={styles.progressInfo}>
+              <Text style={styles.progressText}>Progress</Text>
+              <Text style={styles.progressPercent}>0%</Text>
             </View>
-            <Text style={styles.cardAction}>Start Mission →</Text>
+            <View style={styles.progressBarContainer}>
+              <View style={[styles.progressBar, { width: '0%' }]} />
+            </View>
           </View>
-        </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.startButton}
+            onPress={() => handleCardPress('Flash Floods')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.startButtonText}>Start Course</Text>
+          </TouchableOpacity>
+        </View>
 
-        {/* Card 4: Fire Safety & Evacuation - SCDF Coverage */}
-        <TouchableOpacity 
-          style={[styles.card, styles.plannedCard]}
-          onPress={() => handleCardPress('Fire Safety & Evacuation')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardNumber}>04</Text>
-            <Text style={styles.cardTitle}>Fire Safety & Evacuation</Text>
-            <Text style={styles.cardLevel}>🚧 Planned</Text>
+        {/* Fire Safety - Planned */}
+        <View style={[styles.courseCard, styles.plannedCard]}>
+          <View style={styles.courseHeader}>
+            <View style={styles.imagePlaceholder}>
+              <Text style={styles.placeholderText}>🔥</Text>
+            </View>
+            <View style={styles.courseTitleSection}>
+              <Text style={styles.courseTitle}>Fire Safety</Text>
+              <Text style={styles.courseLevel}>🚧 Planned</Text>
+            </View>
           </View>
-          <Text style={styles.cardDescription}>
-            🔥 Learn fire prevention, extinguisher use (P.A.S.S. method), smoke evacuation, 
-            gas leak response, and EV fire safety with interactive scenarios.
+          
+          <Text style={styles.courseDescription}>
+            Fire prevention and emergency response protocols.
           </Text>
-          <View style={styles.cardFooter}>
-            <Text style={styles.plannedText}>SCDF Handbook Coverage Available</Text>
+          
+          {/* Progress Bar */}
+          <View style={styles.progressSection}>
+            <View style={styles.progressInfo}>
+              <Text style={styles.progressText}>Progress</Text>
+              <Text style={styles.progressPercent}>0%</Text>
+            </View>
+            <View style={styles.progressBarContainer}>
+              <View style={[styles.progressBar, { width: '0%' }]} />
+            </View>
           </View>
-        </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.startButton, styles.plannedButton]}
+            disabled={true}
+          >
+            <Text style={styles.plannedButtonText}>Coming Soon</Text>
+          </TouchableOpacity>
+        </View>
 
-        {/* Card 5: First Aid & Medical Emergencies - SCDF Coverage */}
-        <TouchableOpacity 
-          style={[styles.card, styles.plannedCard]}
-          onPress={() => handleCardPress('First Aid & Medical')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardNumber}>05</Text>
-            <Text style={styles.cardTitle}>First Aid & Medical</Text>
-            <Text style={styles.cardLevel}>🚧 Planned</Text>
+        {/* First Aid & Medical - Planned */}
+        <View style={[styles.courseCard, styles.plannedCard]}>
+          <View style={styles.courseHeader}>
+            <View style={styles.imagePlaceholder}>
+              <Text style={styles.placeholderText}>🚑</Text>
+            </View>
+            <View style={styles.courseTitleSection}>
+              <Text style={styles.courseTitle}>First Aid & Medical</Text>
+              <Text style={styles.courseLevel}>🚧 Planned</Text>
+            </View>
           </View>
-          <Text style={styles.cardDescription}>
-            🚑 Practice CPR, AED usage, treating bleeding, fractures, burns, choking, 
-            and stroke response through hands-on simulations.
+          
+          <Text style={styles.courseDescription}>
+            CPR, AED usage, and emergency medical procedures.
           </Text>
-          <View style={styles.cardFooter}>
-            <Text style={styles.plannedText}>SCDF Handbook Coverage Available</Text>
+          
+          {/* Progress Bar */}
+          <View style={styles.progressSection}>
+            <View style={styles.progressInfo}>
+              <Text style={styles.progressText}>Progress</Text>
+              <Text style={styles.progressPercent}>0%</Text>
+            </View>
+            <View style={styles.progressBarContainer}>
+              <View style={[styles.progressBar, { width: '0%' }]} />
+            </View>
           </View>
-        </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.startButton, styles.plannedButton]}
+            disabled={true}
+          >
+            <Text style={styles.plannedButtonText}>Coming Soon</Text>
+          </TouchableOpacity>
+        </View>
 
-        {/* Card 6: Natural Disasters - SCDF Coverage */}
-        <TouchableOpacity 
-          style={[styles.card, styles.plannedCard]}
-          onPress={() => handleCardPress('Natural Disasters')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardNumber}>06</Text>
-            <Text style={styles.cardTitle}>Natural Disasters</Text>
-            <Text style={styles.cardLevel}>🚧 Planned</Text>
+        {/* Natural Disasters - Planned */}
+        <View style={[styles.courseCard, styles.plannedCard]}>
+          <View style={styles.courseHeader}>
+            <View style={styles.imagePlaceholder}>
+              <Text style={styles.placeholderText}>🌪️</Text>
+            </View>
+            <View style={styles.courseTitleSection}>
+              <Text style={styles.courseTitle}>Natural Disasters</Text>
+              <Text style={styles.courseLevel}>🚧 Planned</Text>
+            </View>
           </View>
-          <Text style={styles.cardDescription}>
-            🌪️ Navigate earthquakes, tremors, landslides, tsunamis, typhoons, lightning, 
-            and power outages using official SCDF emergency protocols.
+          
+          <Text style={styles.courseDescription}>
+            Earthquakes, tsunamis, and natural disaster protocols.
           </Text>
-          <View style={styles.cardFooter}>
-            <Text style={styles.plannedText}>SCDF Handbook Coverage Available</Text>
+          
+          {/* Progress Bar */}
+          <View style={styles.progressSection}>
+            <View style={styles.progressInfo}>
+              <Text style={styles.progressText}>Progress</Text>
+              <Text style={styles.progressPercent}>0%</Text>
+            </View>
+            <View style={styles.progressBarContainer}>
+              <View style={[styles.progressBar, { width: '0%' }]} />
+            </View>
           </View>
-        </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.startButton, styles.plannedButton]}
+            disabled={true}
+          >
+            <Text style={styles.plannedButtonText}>Coming Soon</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
-      </ScrollView>
-    </View>
+      <View style={styles.bottomPadding} />
+    </ScrollView>
   );
 }
 
@@ -173,108 +201,211 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  pageTitle: {
-    fontSize: fontSize.header,
-    fontWeight: 'bold',
-    color: colors.text.primary,
-    textAlign: 'center',
-    marginTop: 60,
-    marginBottom: 8,
-  },
-  pageSubtitle: {
-    fontSize: fontSize.lg,
-    color: colors.text.light,
-    textAlign: 'center',
+  
+  // Header styling that scrolls
+  headerBackground: {
+    backgroundColor: colors.primary,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     marginBottom: 24,
   },
-  scrollContainer: {
-    flex: 1,
+  
+  safeArea: {
+    // SafeAreaView handles the notch padding
   },
-  scrollContent: {
+  
+  header: {
     paddingHorizontal: 20,
-    paddingBottom: 30,
+    paddingBottom: 24,
+    alignItems: 'center',
   },
-  card: {
+  
+  appTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 6,
+  },
+  
+  subtitle: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.9)',
+  },
+  
+  section: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    marginBottom: 16,
+  },
+
+  // Badges section
+  badgesContainer: {
     backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    marginBottom: 20,
-    padding: 24,
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#e2e8f0',
+    borderStyle: 'dashed',
+    minHeight: 120,
+  },
+
+  badgesPlaceholder: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.secondary,
+    marginBottom: 8,
+  },
+
+  badgesSubtext: {
+    fontSize: 14,
+    color: colors.text.light,
+    textAlign: 'center',
+  },
+  
+  // Course cards
+  courseCard: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    marginBottom: 16,
+    padding: 20,
     shadowColor: colors.shadow,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
     borderLeftWidth: 4,
     borderLeftColor: colors.primary,
   },
+  
   plannedCard: {
     opacity: 0.85,
-    borderLeftColor: colors.secondary, // Green for planned content
+    borderLeftColor: colors.secondary,
   },
-  cardHeader: {
+  
+  courseHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  cardNumber: {
-    fontSize: fontSize.title,
-    fontWeight: 'bold',
-    color: colors.primary,
-    backgroundColor: colors.primaryLight,
-    width: 40,
-    height: 40,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    borderRadius: 20,
+  
+  // Image placeholder
+  imagePlaceholder: {
+    width: 60,
+    height: 60,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: 16,
+    borderWidth: 2,
+    borderColor: '#e9ecef',
+    borderStyle: 'dashed',
   },
-  cardTitle: {
-    fontSize: fontSize.xl,
-    fontWeight: 'bold',
-    color: colors.text.primary,
+  
+  placeholderText: {
+    fontSize: 24,
+  },
+  
+  courseTitleSection: {
     flex: 1,
   },
-  cardLevel: {
-    fontSize: fontSize.sm,
+  
+  courseTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    marginBottom: 4,
+  },
+  
+  courseLevel: {
+    fontSize: 12,
     color: colors.primary,
     backgroundColor: colors.primaryLight,
+    alignSelf: 'flex-start',
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingVertical: 2,
+    borderRadius: 10,
     fontWeight: '600',
   },
-  cardDescription: {
-    fontSize: fontSize.md,
+  
+  courseDescription: {
+    fontSize: 14,
     color: colors.text.secondary,
-    lineHeight: 22,
+    lineHeight: 20,
     marginBottom: 16,
   },
-  cardFooter: {
+  
+  // Progress section
+  progressSection: {
+    marginBottom: 16,
+  },
+  
+  progressInfo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 8,
   },
-  cardStats: {
-    flexDirection: 'row',
-    gap: 12,
+  
+  progressText: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    fontWeight: '600',
   },
-  cardStat: {
-    fontSize: fontSize.sm,
+  
+  progressPercent: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    fontWeight: '600',
+  },
+  
+  progressBarContainer: {
+    height: 8,
+    backgroundColor: '#f1f3f4',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#4caf50', 
+    borderRadius: 4,
+  },
+  
+  // Start button
+  startButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  
+  startButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  
+  plannedButton: {
+    backgroundColor: '#e9ecef',
+  },
+  
+  plannedButtonText: {
     color: colors.text.light,
+    fontSize: 16,
     fontWeight: '600',
   },
-  cardAction: {
-    fontSize: fontSize.md,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  plannedText: {
-    fontSize: fontSize.sm,
-    color: colors.secondary,
-    fontWeight: '600',
-    fontStyle: 'italic',
+  
+  bottomPadding: {
+    height: 100,
   },
 });
