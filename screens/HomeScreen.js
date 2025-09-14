@@ -1,21 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, RefreshControl, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import * as Location from 'expo-location';
 import { colors } from '../constants/theme';
+import { weatherService } from '../services/weatherService';
 
 export default function HomeScreen({ navigation }) {
-  // ... all your existing state and functions stay the same ...
   const [userName, setUserName] = useState('Guest');
   const [userLocation, setUserLocation] = useState('Singapore');
   const [loading, setLoading] = useState(true);
+  
+  const [weatherData, setWeatherData] = useState(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchUserData();
     getCurrentLocation();
+    loadWeatherData();
   }, []);
-
-  // ... keep all your existing functions (fetchUserData, getCurrentLocation, getGreeting, navigateToTab) ...
 
   const fetchUserData = async () => {
     try {
@@ -100,6 +104,33 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
+  const loadWeatherData = async () => {
+    try {
+      setWeatherLoading(true);
+      console.log('🌤️ Loading weather data...');
+      const data = await weatherService.getProcessedWeatherData();
+      setWeatherData(data);
+      console.log('✅ Weather data loaded:', data);
+    } catch (error) {
+      console.error('❌ Failed to load weather data:', error);
+      setWeatherData(weatherService.getFallbackWeatherData());
+    } finally {
+      setWeatherLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    try {
+      setRefreshing(true);
+      weatherService.clearCache();
+      await loadWeatherData();
+    } catch (error) {
+      console.error('❌ Refresh failed:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good Morning';
@@ -119,20 +150,36 @@ export default function HomeScreen({ navigation }) {
   });
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      {/* Header with dynamic user data */}
-      <View style={styles.header}>
-        <Text style={styles.greeting}>
-          {getGreeting()}, {loading ? '...' : userName}!
-        </Text>
-        <Text style={styles.date}>{currentDate}</Text>
-        <Text style={styles.location}>📍 {userLocation}</Text>
+    <View style={styles.container}>
+      {/* Simple Primary Color Header */}
+      <View style={styles.headerBackground}>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+          <View style={styles.header}>
+            <Text style={styles.greeting}>
+              {getGreeting()}, {loading ? '...' : userName}
+            </Text>
+            <Text style={styles.date}>{currentDate}</Text>
+            <Text style={styles.location}>📍 {userLocation}</Text>
+          </View>
+        </SafeAreaView>
       </View>
       
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerSpacer} />
-
-        {/* Quick Actions Grid - WITH ASSET ICONS */}
+      <ScrollView 
+        style={styles.scrollContainer} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {/* My Badges Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>My Badges</Text>
+          <View style={styles.badgesContainer}>
+            <Text style={styles.badgesPlaceholder}>Currently no badges</Text>
+            <Text style={styles.badgesSubtext}>Complete quests to receive badges</Text>
+          </View>
+        </View>
+        {/* Quick Actions Grid */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
@@ -186,20 +233,75 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Keep the rest exactly as is */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Today's Safety Tip</Text>
-          <View style={styles.tipCard}>
-            <Text style={styles.tipIcon}>💡</Text>
-            <View style={styles.tipContent}>
-              <Text style={styles.tipTitle}>Flash Flood Safety</Text>
-              <Text style={styles.tipDescription}>
-                Never drive through flooded roads. Just 6 inches of moving water can knock you down, and 2 feet can carry away your vehicle.
+        {/* Real-time Environmental Conditions */}
+        <View style={styles.environmentalAlerts}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Current Conditions</Text>
+            {weatherLoading && (
+              <ActivityIndicator size="small" color={colors.primary} style={styles.loadingIndicator} />
+            )}
+          </View>
+          
+          <View style={styles.alertsGrid}>
+            <View style={styles.alertCard}>
+              <Text style={styles.alertIcon}>🌡️</Text>
+              <Text style={styles.alertValue}>
+                {weatherData ? weatherData.temperature : '28°C'}
               </Text>
+              <Text style={styles.alertLabel}>Temperature</Text>
+            </View>
+            <View style={styles.alertCard}>
+              <Text style={styles.alertIcon}>💨</Text>
+              <Text style={styles.alertValue}>
+                {weatherData ? weatherData.airQuality : 'Good'}
+              </Text>
+              <Text style={styles.alertLabel}>Air Quality</Text>
+            </View>
+            <View style={styles.alertCard}>
+              <Text style={styles.alertIcon}>🌧️</Text>
+              <Text style={styles.alertValue}>
+                {weatherData ? weatherData.rainRisk : '15%'}
+              </Text>
+              <Text style={styles.alertLabel}>Rain Risk</Text>
             </View>
           </View>
+
+          <View style={styles.alertsGrid}>
+            <View style={styles.alertCard}>
+              <Text style={styles.alertIcon}>💧</Text>
+              <Text style={styles.alertValue}>
+                {weatherData ? weatherData.humidity : '75%'}
+              </Text>
+              <Text style={styles.alertLabel}>Humidity</Text>
+            </View>
+            <View style={styles.alertCard}>
+              <Text style={styles.alertIcon}>🌪️</Text>
+              <Text style={styles.alertValue}>
+                {weatherData ? weatherData.windSpeed : '12 km/h'}
+              </Text>
+              <Text style={styles.alertLabel}>Wind Speed</Text>
+            </View>
+            <TouchableOpacity 
+              style={[styles.alertCard, styles.refreshCard]}
+              onPress={onRefresh}
+              disabled={refreshing}
+            >
+              <Text style={styles.alertIcon}>🔄</Text>
+              <Text style={styles.alertValue}>
+                {refreshing ? 'Updating...' : 'Refresh'}
+              </Text>
+              <Text style={styles.alertLabel}>Live Data</Text>
+            </TouchableOpacity>
+          </View>
+
+          {weatherData && (
+            <Text style={styles.dataSource}>
+              Data from: {weatherData.dataSource} • Last updated: {weatherData.lastUpdated}
+            </Text>
+          )}
         </View>
 
+        {/* Emergency Contacts */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Emergency Contacts</Text>
           <View style={styles.emergencyContacts}>
@@ -217,58 +319,74 @@ export default function HomeScreen({ navigation }) {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    backgroundColor: colors.background,
-    paddingTop: 20,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
+  
+  // Simple header background
+  headerBackground: {
+    backgroundColor: colors.primary, // Your #ff6b6b color
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
+  
+  safeArea: {
+    // SafeAreaView handles the notch padding
+  },
+  
+  header: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+  },
+  
   greeting: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.text.primary,
+    color: 'white',
     marginBottom: 6,
   },
+  
   date: {
     fontSize: 16,
-    color: colors.text.light,
+    color: 'rgba(255,255,255,0.9)',
     marginBottom: 4,
   },
+  
   location: {
     fontSize: 14,
-    color: colors.text.light,
+    color: 'rgba(255,255,255,0.8)',
   },
-  headerSpacer: {
-    height: 24,
+  
+  scrollContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
+  
   section: {
     paddingHorizontal: 20,
     marginBottom: 24,
+    marginTop: 24,
   },
+  
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: colors.text.primary,
     marginBottom: 16,
   },
+  
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
+  
   quickActionCard: {
     backgroundColor: colors.white,
     borderRadius: 16,
@@ -283,71 +401,116 @@ const styles = StyleSheet.create({
     elevation: 4,
     borderLeftWidth: 4,
   },
+  
   learnCard: {
     borderLeftColor: colors.primary,
   },
+  
   resourcesCard: {
     borderLeftColor: colors.secondary,
   },
+  
   toolsCard: {
     borderLeftColor: colors.status.warning,
   },
+  
   profileCard: {
     borderLeftColor: '#8b5cf6',
   },
-  // UPDATED: Icon style for images instead of text
+  
   quickActionIcon: {
     width: 32,
     height: 32,
     marginBottom: 10,
     resizeMode: 'contain',
   },
+  
   quickActionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     color: colors.text.primary,
     marginBottom: 4,
   },
+  
   quickActionSubtitle: {
     fontSize: 12,
     color: colors.text.light,
     textAlign: 'center',
   },
-  tipCard: {
-    backgroundColor: colors.primaryLight,
-    borderRadius: 16,
-    padding: 20,
+  
+  environmentalAlerts: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  
+  sectionHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    borderLeftWidth: 4,
-    borderLeftColor: colors.status.warning,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  
+  loadingIndicator: {
+    marginLeft: 8,
+  },
+  
+  alertsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  
+  alertCard: {
+    flex: 1,
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 4,
+    alignItems: 'center',
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
-  tipIcon: {
+  
+  refreshCard: {
+    backgroundColor: '#f0f8ff',
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderStyle: 'dashed',
+  },
+  
+  alertIcon: {
     fontSize: 24,
-    marginRight: 16,
+    marginBottom: 8,
   },
-  tipContent: {
-    flex: 1,
-  },
-  tipTitle: {
+  
+  alertValue: {
     fontSize: 16,
     fontWeight: 'bold',
     color: colors.text.primary,
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  tipDescription: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    lineHeight: 20,
+  
+  alertLabel: {
+    fontSize: 12,
+    color: colors.text.light,
+    textAlign: 'center',
   },
+  
+  dataSource: {
+    fontSize: 11,
+    color: colors.text.light,
+    textAlign: 'center',
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+  
   emergencyContacts: {
     gap: 12,
   },
+  
   emergencyButton: {
     backgroundColor: colors.status.error,
     borderRadius: 12,
@@ -361,17 +524,45 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  
   emergencyButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
   },
+  
   emergencyNumber: {
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
   },
+  
   bottomPadding: {
     height: 100,
   },
+  // Add these to your styles object
+badgesContainer: {
+  backgroundColor: colors.white,
+  borderRadius: 16,
+  padding: 32,
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderWidth: 2,
+  borderColor: '#e2e8f0',
+  borderStyle: 'dashed',
+  minHeight: 120,
+},
+
+badgesPlaceholder: {
+  fontSize: 18,
+  fontWeight: '600',
+  color: colors.text.secondary,
+  marginBottom: 8,
+},
+
+badgesSubtext: {
+  fontSize: 14,
+  color: colors.text.light,
+  textAlign: 'center',
+},
 });
