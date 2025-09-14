@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Image } from 'react-native';
 import { supabase } from '../lib/supabase';
 import * as Location from 'expo-location';
-import { colors } from '../constants/theme'; // Import your theme colors
+import { colors } from '../constants/theme';
 
 export default function HomeScreen({ navigation }) {
+  // ... all your existing state and functions stay the same ...
   const [userName, setUserName] = useState('Guest');
   const [userLocation, setUserLocation] = useState('Singapore');
   const [loading, setLoading] = useState(true);
@@ -13,6 +14,8 @@ export default function HomeScreen({ navigation }) {
     fetchUserData();
     getCurrentLocation();
   }, []);
+
+  // ... keep all your existing functions (fetchUserData, getCurrentLocation, getGreeting, navigateToTab) ...
 
   const fetchUserData = async () => {
     try {
@@ -129,7 +132,7 @@ export default function HomeScreen({ navigation }) {
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.headerSpacer} />
 
-        {/* Quick Actions Grid */}
+        {/* Quick Actions Grid - WITH ASSET ICONS */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
@@ -137,7 +140,10 @@ export default function HomeScreen({ navigation }) {
               style={[styles.quickActionCard, styles.learnCard]}
               onPress={() => navigateToTab('Menu')}
             >
-              <Text style={styles.quickActionIcon}>🎯</Text>
+              <Image 
+                source={require('../assets/bullseye.png')} 
+                style={styles.quickActionIcon}
+              />
               <Text style={styles.quickActionTitle}>Learn</Text>
               <Text style={styles.quickActionSubtitle}>Emergency Training</Text>
             </TouchableOpacity>
@@ -146,7 +152,10 @@ export default function HomeScreen({ navigation }) {
               style={[styles.quickActionCard, styles.resourcesCard]}
               onPress={() => navigateToTab('LocalResources')}
             >
-              <Text style={styles.quickActionIcon}>🏠</Text>
+              <Image 
+                source={require('../assets/house.png')} 
+                style={styles.quickActionIcon}
+              />
               <Text style={styles.quickActionTitle}>Resources</Text>
               <Text style={styles.quickActionSubtitle}>Find Shelters</Text>
             </TouchableOpacity>
@@ -155,7 +164,10 @@ export default function HomeScreen({ navigation }) {
               style={[styles.quickActionCard, styles.toolsCard]}
               onPress={() => navigateToTab('Cart')}
             >
-              <Text style={styles.quickActionIcon}>✅</Text>
+              <Image 
+                source={require('../assets/tick.png')} 
+                style={styles.quickActionIcon}
+              />
               <Text style={styles.quickActionTitle}>Tools</Text>
               <Text style={styles.quickActionSubtitle}>Check Preparedness</Text>
             </TouchableOpacity>
@@ -164,14 +176,17 @@ export default function HomeScreen({ navigation }) {
               style={[styles.quickActionCard, styles.profileCard]}
               onPress={() => navigateToTab('Profile')}
             >
-              <Text style={styles.quickActionIcon}>👤</Text>
+              <Image 
+                source={require('../assets/profile.png')} 
+                style={styles.quickActionIcon}
+              />
               <Text style={styles.quickActionTitle}>Profile</Text>
               <Text style={styles.quickActionSubtitle}>View Progress</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Today's Safety Tip */}
+        {/* Keep the rest exactly as is */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Today's Safety Tip</Text>
           <View style={styles.tipCard}>
@@ -185,7 +200,6 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Emergency Contacts */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Emergency Contacts</Text>
           <View style={styles.emergencyContacts}>
@@ -210,44 +224,44 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background, // #f0f4f8 - matches status bar area
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
-    backgroundColor: colors.background, // #f0f4f8
+    backgroundColor: colors.background,
   },
   header: {
-    backgroundColor: colors.background, // #f0f4f8 - same grey as content  
+    backgroundColor: colors.background,
     paddingTop: 20,
     paddingBottom: 24,
     paddingHorizontal: 20,
   },
   greeting: {
-    fontSize: 24, // Consistent with other screens
+    fontSize: 24,
     fontWeight: 'bold',
-    color: colors.text.primary, // Black text like other screens
+    color: colors.text.primary,
     marginBottom: 6,
   },
   date: {
     fontSize: 16,
-    color: colors.text.light, // Grey text
+    color: colors.text.light,
     marginBottom: 4,
   },
   location: {
     fontSize: 14,
-    color: colors.text.light, // Grey text
+    color: colors.text.light,
   },
   headerSpacer: {
-    height: 24, // Consistent spacing
+    height: 24,
   },
   section: {
     paddingHorizontal: 20,
-    marginBottom: 24, // Consistent spacing
+    marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 20, // Consistent with other screens
+    fontSize: 20,
     fontWeight: 'bold',
-    color: colors.text.primary, // #2d3748
+    color: colors.text.primary,
     marginBottom: 16,
   },
   quickActionsGrid: {
@@ -257,7 +271,7 @@ const styles = StyleSheet.create({
   },
   quickActionCard: {
     backgroundColor: colors.white,
-    borderRadius: 16, // Consistent with theme
+    borderRadius: 16,
     padding: 20,
     width: '48%',
     alignItems: 'center',
@@ -267,44 +281,46 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
-    borderLeftWidth: 4, // Consistent with other cards
+    borderLeftWidth: 4,
   },
-  // Individual card styles using theme colors
   learnCard: {
-    borderLeftColor: colors.primary, // #ff6b6b
+    borderLeftColor: colors.primary,
   },
   resourcesCard: {
-    borderLeftColor: colors.secondary, // #10b981
+    borderLeftColor: colors.secondary,
   },
   toolsCard: {
-    borderLeftColor: colors.status.warning, // #f59e0b
+    borderLeftColor: colors.status.warning,
   },
   profileCard: {
-    borderLeftColor: '#8b5cf6', // Keep purple for variety
+    borderLeftColor: '#8b5cf6',
   },
+  // UPDATED: Icon style for images instead of text
   quickActionIcon: {
-    fontSize: 32,
+    width: 32,
+    height: 32,
     marginBottom: 10,
+    resizeMode: 'contain',
   },
   quickActionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: colors.text.primary, // #2d3748
+    color: colors.text.primary,
     marginBottom: 4,
   },
   quickActionSubtitle: {
     fontSize: 12,
-    color: colors.text.light, // #718096
+    color: colors.text.light,
     textAlign: 'center',
   },
   tipCard: {
-    backgroundColor: colors.primaryLight, // #fff5f5 - light version of primary
-    borderRadius: 16, // Consistent
+    backgroundColor: colors.primaryLight,
+    borderRadius: 16,
     padding: 20,
     flexDirection: 'row',
     alignItems: 'flex-start',
     borderLeftWidth: 4,
-    borderLeftColor: colors.status.warning, // #f59e0b
+    borderLeftColor: colors.status.warning,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -321,20 +337,20 @@ const styles = StyleSheet.create({
   tipTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: colors.text.primary, // #2d3748
+    color: colors.text.primary,
     marginBottom: 8,
   },
   tipDescription: {
     fontSize: 14,
-    color: colors.text.secondary, // #4a5568
+    color: colors.text.secondary,
     lineHeight: 20,
   },
   emergencyContacts: {
-    gap: 12, // Consistent spacing
+    gap: 12,
   },
   emergencyButton: {
-    backgroundColor: colors.status.error, // #dc2626 - consistent red
-    borderRadius: 12, // Consistent
+    backgroundColor: colors.status.error,
+    borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
