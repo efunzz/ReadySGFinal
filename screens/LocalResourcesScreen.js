@@ -46,75 +46,6 @@ export default function LocalResourcesScreen({ navigation }) {
     fetchResourceData();
   }, [selectedCategory, userLocation]);
 
-  // Network testing functions
-  const testNetworkConnectivity = async () => {
-    console.log('🧪 Starting network connectivity tests...');
-    try {
-      const results = await oneMapService.testNetworkConnectivity();
-      
-      // Show results in an alert for easy viewing
-      const successful = results.filter(r => r.success).length;
-      const summary = `Network Test Results:\n${successful}/${results.length} tests passed\n\n` +
-        results.map(r => `${r.success ? '✅' : '❌'} ${r.name}`).join('\n');
-      
-      Alert.alert('Network Test Results', summary);
-    } catch (error) {
-      console.error('Network test error:', error);
-      Alert.alert('Network Test Error', error.message);
-    }
-  };
-
-  const runQuickConnectivityCheck = async () => {
-    const isConnected = await oneMapService.quickConnectivityCheck();
-    Alert.alert(
-      'Quick Network Check', 
-      isConnected ? 'Network is working!' : 'Network issue detected'
-    );
-  };
-
-  const runNetworkDiagnostics = async () => {
-    console.log('🔍 Running network diagnostics...');
-    const result = await oneMapService.diagnoseNetworkIssue();
-    Alert.alert(
-      'Network Diagnostics', 
-      result.success ? result.message : `Issue: ${result.message}`
-    );
-  };
-
-  // OneMap specific tests
-  const testOneMapAPI = async () => {
-    console.log('🧪 Testing OneMap API...');
-    const result = await oneMapService.testOneMapAPI();
-    Alert.alert('OneMap API Test', result.message);
-  };
-
-  const validateToken = async () => {
-    console.log('🔑 Validating OneMap token...');
-    const result = await oneMapService.validateToken();
-    Alert.alert(
-      'Token Validation', 
-      result.valid ? 'Token is valid ✅' : `Token issue: ${result.message} ❌`
-    );
-  };
-
-  // NEW: Location-aware search test
-  const testLocationAwareSearch = async () => {
-    if (!userLocation) {
-      Alert.alert(
-        'Location Required', 
-        'Please enable location permissions first. The app needs your GPS location to find nearby facilities.'
-      );
-      return;
-    }
-  
-    console.log('🎯 Testing location-aware search...');
-    const result = await oneMapService.testLocationAwareSearch(userLocation);
-    Alert.alert(
-      'Location-Aware Search Test', 
-      result.success ? `SUCCESS: ${result.message}` : `FAILED: ${result.message}`
-    );
-  };
-
   const getUserLocation = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -282,8 +213,9 @@ export default function LocalResourcesScreen({ navigation }) {
                 <Text style={styles.distanceText}>📍 {resource.distance}</Text>
                 <TouchableOpacity 
                   style={styles.directionsButton}
-                  onPress={() => {
+                  onPress={async () => {
                     if (viewMode === 'list' && resource.latitude && resource.longitude) {
+                      // First switch to map view
                       setViewMode('map');
                       setTimeout(() => {
                         mapRef.current?.animateToRegion({
@@ -293,6 +225,51 @@ export default function LocalResourcesScreen({ navigation }) {
                           longitudeDelta: 0.005,
                         });
                       }, 100);
+                    } else if (userLocation && resource.latitude && resource.longitude) {
+                      // Get real directions
+                      try {
+                        console.log('🗺️ Getting directions...');
+                        setLoading(true);
+                        
+                        const directions = await oneMapService.getPublicTransportDirections(
+                          userLocation,
+                          { latitude: resource.latitude, longitude: resource.longitude }
+                        );
+                        
+                        setLoading(false);
+                        
+                        if (directions.success) {
+                          const distanceKm = (directions.distance / 1000).toFixed(1);
+                          const durationMin = Math.round(directions.duration / 60);
+                          
+                          Alert.alert(
+                            'Directions',
+                            `Distance: ${distanceKm}km\nEstimated time: ${durationMin} minutes by public transport\n\nWould you like to view detailed directions?`,
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              { 
+                                text: 'View Directions', 
+                                onPress: () => {
+                                  const instructions = directions.instructions
+                                    .slice(0, 5) // Show first 5 steps
+                                    .map((instruction, index) => `${index + 1}. ${instruction.text || instruction}`)
+                                    .join('\n');
+                                  
+                                  Alert.alert('Route Instructions', instructions || 'Detailed directions available');
+                                }
+                              }
+                            ]
+                          );
+                        } else {
+                          Alert.alert('Directions Error', 'Could not get directions to this location.');
+                        }
+                      } catch (error) {
+                        setLoading(false);
+                        console.error('Directions error:', error);
+                        Alert.alert('Error', 'Failed to get directions.');
+                      }
+                    } else {
+                      Alert.alert('Location Required', 'Location services needed for directions.');
                     }
                   }}
                 >
@@ -322,38 +299,13 @@ export default function LocalResourcesScreen({ navigation }) {
           <View style={styles.header}>
             <Text style={styles.pageTitle}>Local Resources</Text>
             <Text style={styles.locationText}>
-              📍 {userLocation ? 'Location-based results' : 'Singapore (sample data)'}
+              {userLocation ? '📍 Showing facilities near your location' : '📍 Location services disabled - showing sample data'}
             </Text>
           </View>
         </SafeAreaView>
       </View>
 
       <View style={styles.contentContainer}>
-        {/* Network Test Panel (Development Only) */}
-        <View style={styles.testContainer}>
-          <Text style={styles.testTitle}>OneMap API Testing (Development)</Text>
-          <View style={styles.testButtonGrid}>
-            <TouchableOpacity style={styles.testButton} onPress={validateToken}>
-              <Text style={styles.testButtonText}>Token Check</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.testButton} onPress={testOneMapAPI}>
-              <Text style={styles.testButtonText}>API Test</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.testButton} onPress={testLocationAwareSearch}>
-              <Text style={styles.testButtonText}>Location Test</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.testButton} onPress={runQuickConnectivityCheck}>
-              <Text style={styles.testButtonText}>Quick Test</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.testButton} onPress={testNetworkConnectivity}>
-              <Text style={styles.testButtonText}>Full Test</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.testButton} onPress={runNetworkDiagnostics}>
-              <Text style={styles.testButtonText}>Diagnose</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {/* View Mode Toggle */}
         <View style={styles.viewToggle}>
           <TouchableOpacity
@@ -374,7 +326,7 @@ export default function LocalResourcesScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* Category Tabs */}
+        {/* Compact Category Tabs */}
         <ScrollView 
           horizontal 
           style={styles.categoryContainer}
@@ -400,7 +352,7 @@ export default function LocalResourcesScreen({ navigation }) {
           ))}
         </ScrollView>
 
-        {/* Content Area */}
+        {/* Content Area - Now Takes More Space */}
         <View style={styles.contentArea}>
           {viewMode === 'map' ? renderMap() : renderList()}
         </View>
@@ -508,49 +460,14 @@ const styles = StyleSheet.create({
   },
   
   locationText: {
-    fontSize: 16,
+    fontSize: 14,
     color: 'rgba(255,255,255,0.9)',
+    textAlign: 'center',
   },
   
   contentContainer: {
     flex: 1,
-    paddingTop: 20,
-  },
-
-  // Network Test Panel Styles
-  testContainer: {
-    backgroundColor: '#f0f9ff',
-    margin: 20,
-    marginBottom: 12,
-    padding: 15,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#0ea5e9',
-  },
-  testTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#0c4a6e',
-    marginBottom: 10,
-  },
-  testButtonGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  testButton: {
-    backgroundColor: '#0ea5e9',
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    borderRadius: 6,
-    marginBottom: 6,
-    width: '32%', // Adjusted for 3 columns
-  },
-  testButtonText: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: '600',
-    textAlign: 'center',
+    paddingTop: 16,
   },
 
   // Location Banner Styles
@@ -587,7 +504,7 @@ const styles = StyleSheet.create({
   viewToggle: {
     flexDirection: 'row',
     marginHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 12,
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 4,
@@ -595,7 +512,7 @@ const styles = StyleSheet.create({
   
   toggleButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 10,
     alignItems: 'center',
     borderRadius: 8,
   },
@@ -614,20 +531,21 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   
-  // Categories
+  // Compact Categories
   categoryContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 16,
+    paddingHorizontal: 40,
+    marginBottom: -390,
   },
   
   categoryTab: {
     backgroundColor: 'white',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 20,
-    marginRight: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    marginRight: 10,
     alignItems: 'center',
-    minWidth: 70,
+    minWidth: 60,
+    maxHeight: 100
   },
   
   activeCategoryTab: {
@@ -635,12 +553,12 @@ const styles = StyleSheet.create({
   },
   
   categoryIcon: {
-    fontSize: 20,
-    marginBottom: 4,
+    fontSize: 16,
+    marginBottom: 2,
   },
   
   categoryText: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#4a5568',
     fontWeight: '600',
   },
@@ -649,15 +567,15 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   
-  // Content area
+  // Content area - Now takes more space
   contentArea: {
     flex: 1,
   },
   
-  // Map styles
+  // Map styles - Bigger map
   mapContainer: {
     flex: 1,
-    margin: 20,
+    margin: 16,
     borderRadius: 16,
     overflow: 'hidden',
   },
@@ -789,7 +707,7 @@ const styles = StyleSheet.create({
   
   // Emergency footer
   emergencyFooter: {
-    padding: 20,
+    padding: 16,
     backgroundColor: 'white',
     borderTopWidth: 1,
     borderTopColor: '#e2e8f0',
@@ -797,7 +715,7 @@ const styles = StyleSheet.create({
   
   emergencyButton: {
     backgroundColor: '#dc2626',
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
   },

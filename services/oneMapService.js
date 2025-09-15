@@ -5,7 +5,7 @@ export class OneMapService {
     this.cache = new Map();
     this.cacheTimeout = 10 * 60 * 1000; // 10 minutes cache
     // REPLACE THIS WITH YOUR ACTUAL ACCESS TOKEN FROM ONEMAP
-    this.accessToken = 'YOUR_ACCESS_TOKEN_HERE';
+    this.accessToken = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo4NzkzLCJmb3JldmVyIjpmYWxzZSwiaXNzIjoiT25lTWFwIiwiaWF0IjoxNzU3ODY1NzU3LCJuYmYiOjE3NTc4NjU3NTcsImV4cCI6MTc1ODEyNDk1NywianRpIjoiZDc3ZmM5NjctN2Q0Yi00ZTU1LWE3OTQtMTNkMmJjZGIyMDYyIn0.tVz4IgxiqpXFHFtrW0BlxedsUQAlWRHGIMpF6p6Ukbi4p_jUY1OrBtKCh2HJvipLqVpE1yPT7iEsIMCYw2EDKXDi_2motWqQfxZ36GcJuun05CQ_Ee47E-KwlnZMozHSqxLuFhnY-KmVZ54-LxWn5TytfN1L__lDjy_ycak1CKD2muOP0a2CzM4JlyaEvMI_4aaSMokvym_XH5JJ7BTR5ZhYCrZnuzLOBD7W3kt8E7LkUwtvRUBM45QkvZf5JihnkJ4oMacKXt0Kt0EVvQ1UwMq7LLtykRq_jykRPPmIl6c3DyIXaAS2DZ8_-PNmTUT22dQKcrZW9PHhQNowb3ttRQ';
   }
 
   // Get cached data if available and not expired
@@ -24,8 +24,16 @@ export class OneMapService {
       timestamp: Date.now()
     });
   }
+
+  // Create a timeout promise for React Native compatibility
+  createTimeoutPromise(ms) {
+    return new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Request timeout')), ms);
+    });
+  }
+
   // Get directions using OneMap Routing API
-async getDirections(startLocation, endLocation, routeType = 'drive') {
+  async getDirections(startLocation, endLocation, routeType = 'drive') {
     try {
       console.log(`🗺️ Getting ${routeType} directions...`);
       
@@ -37,7 +45,7 @@ async getDirections(startLocation, endLocation, routeType = 'drive') {
         routeType: routeType, // 'drive', 'walk', 'pt' (public transport)
         token: this.accessToken
       });
-  
+
       const fetchPromise = fetch(`${url}?${params}`, {
         method: 'GET',
         headers: {
@@ -70,21 +78,20 @@ async getDirections(startLocation, endLocation, routeType = 'drive') {
       };
     }
   }
-  
+
   // Get public transport directions
   async getPublicTransportDirections(startLocation, endLocation) {
     return this.getDirections(startLocation, endLocation, 'pt');
   }
-  
+
   // Get walking directions  
   async getWalkingDirections(startLocation, endLocation) {
     return this.getDirections(startLocation, endLocation, 'walk');
   }
-  // Create a timeout promise for React Native compatibility
-  createTimeoutPromise(ms) {
-    return new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Request timeout')), ms);
-    });
+
+  // Get driving directions
+  async getDrivingDirections(startLocation, endLocation) {
+    return this.getDirections(startLocation, endLocation, 'drive');
   }
 
   // Search for places using OneMap Search API - React Native compatible
@@ -142,7 +149,7 @@ async getDirections(startLocation, endLocation, routeType = 'drive') {
     }
   }
 
-  // NEW: Search places near user location with radius filtering
+  // Search places near user location with radius filtering
   async searchPlacesNearLocation(searchTerm, userLocation, maxDistanceKm = 5, maxResults = 10) {
     try {
       console.log(`🎯 Searching for "${searchTerm}" within ${maxDistanceKm}km of user location`);
@@ -190,7 +197,7 @@ async getDirections(startLocation, endLocation, routeType = 'drive') {
     }
   }
 
-  // NEW: Get facilities by category with location awareness
+  // Get facilities by category with location awareness
   async getFacilitiesByCategory(category, userLocation = null, maxDistanceKm = 5) {
     const cacheKey = `category_${category}_${userLocation ? `${userLocation.latitude}_${userLocation.longitude}` : 'no_location'}`;
     const cached = this.getCachedData(cacheKey);
@@ -271,6 +278,73 @@ async getDirections(startLocation, endLocation, routeType = 'drive') {
     }
   }
 
+  // Enhanced search terms with more specific Singapore locations
+  getSearchTermsByCategory(category) {
+    const searchTerms = {
+      medical: [
+        'hospital',
+        'polyclinic',
+        'clinic', 
+        'medical centre',
+        'health campus',
+        'health centre',
+        'medical center',
+        'healthcare',
+        'family clinic',
+        'specialist centre',
+        'pharmacy',
+        'Guardian',
+        'Watsons',
+        'Unity'
+      ],
+      transport: [
+        'MRT station',
+        'bus interchange',
+        'LRT station',
+        'bus stop',
+        'train station',
+        'bus terminal',
+        'interchange',
+        'Woodlands',
+        'Woodlands MRT',
+        'Woodlands interchange',
+        'regional interchange'
+      ],
+      supplies: [
+        'NTUC FairPrice',
+        'Cold Storage',
+        'Giant',
+        'Sheng Siong',
+        'Prime',
+        'Marketplace',
+        'supermarket',
+        'hypermarket',
+        'convenience store',
+        '7-Eleven',
+        'Cheers',
+        'minimart',
+        'provision shop'
+      ],
+      shelters: [
+        'community centre',
+        'community club', 
+        'CC',
+        'neighbourhood centre',
+        'school',
+        'primary school',
+        'secondary school',
+        'stadium',
+        'sports complex',
+        'sports centre',
+        'void deck',
+        'community hall',
+        'RC centre'
+      ]
+    };
+
+    return searchTerms[category] || [];
+  }
+
   // Calculate distance between two points using Haversine formula
   calculateDistanceNumeric(point1, point2) {
     const R = 6371; // Earth's radius in km
@@ -293,249 +367,6 @@ async getDirections(startLocation, endLocation, routeType = 'drive') {
   calculateDistance(point1, point2) {
     const distanceKm = this.calculateDistanceNumeric(point1, point2);
     return distanceKm < 1 ? `${Math.round(distanceKm * 1000)}m` : `${distanceKm.toFixed(1)}km`;
-  }
-
-  // NEW: Test location-aware search
-  async testLocationAwareSearch(userLocation) {
-    try {
-      console.log('🧪 Testing location-aware search...');
-      console.log(`📍 User location: ${userLocation.latitude}, ${userLocation.longitude}`);
-      
-      // Test search for hospitals near user
-      const nearbyHospitals = await this.searchPlacesNearLocation('hospital', userLocation, 5, 5);
-      
-      if (nearbyHospitals.length > 0) {
-        console.log(`✅ Found ${nearbyHospitals.length} hospitals within 5km:`);
-        nearbyHospitals.forEach((hospital, index) => {
-          console.log(`  ${index + 1}. ${hospital.BUILDING || hospital.SEARCHVAL} - ${hospital.distanceText}`);
-        });
-        return { success: true, message: `Found ${nearbyHospitals.length} nearby hospitals` };
-      } else {
-        return { success: false, message: 'No hospitals found within 5km' };
-      }
-    } catch (error) {
-      console.error('❌ Location-aware search test failed:', error);
-      return { success: false, message: `Test failed: ${error.message}` };
-    }
-  }
-
-  // Enhanced search terms with more specific Singapore locations
-getSearchTermsByCategory(category) {
-    const searchTerms = {
-      medical: [
-        'hospital',
-        'polyclinic',
-        'clinic', 
-        'medical centre',
-        'health campus',      
-        'health centre',      
-        'medical center',     
-        'healthcare',         
-        'family clinic',      
-        'specialist centre',  
-        'pharmacy',
-        'Guardian',          
-        'Watsons',           
-        'Unity'              
-      ],
-      transport: [
-       'MRT station',
-        'bus interchange',
-        'LRT station',
-        'bus stop',
-        'train station',
-        'bus terminal',
-        'interchange',
-        'Woodlands',          
-        'Woodlands MRT',       
-        'Woodlands interchange', 
-        'regional interchange'  
-      ],
-      supplies: [
-        'NTUC FairPrice',
-        'Cold Storage',
-        'Giant',
-        'Sheng Siong',
-        'Prime',             
-        'Marketplace',       
-        'supermarket',
-        'hypermarket',       
-        'convenience store',
-        '7-Eleven',
-        'Cheers',
-        'minimart',          
-        'provision shop'     
-      ],
-      shelters: [
-        'community centre',
-        'community club', 
-        'CC',
-        'neighbourhood centre', 
-        'school',
-        'primary school',      
-        'secondary school',     
-        'stadium',
-        'sports complex',
-        'sports centre',        
-        'void deck',
-        'community hall',       
-        'RC centre'            
-      ]
-    };
-  
-    return searchTerms[category] || [];
-  }
-
-  // Test basic network connectivity
-  async quickConnectivityCheck() {
-    try {
-      console.log('⚡ Quick connectivity check...');
-      const fetchPromise = fetch('https://httpbin.org/status/200', { method: 'HEAD' });
-      const timeoutPromise = this.createTimeoutPromise(5000);
-      const response = await Promise.race([fetchPromise, timeoutPromise]);
-      
-      if (response.ok) {
-        console.log('✅ Network is available');
-        return true;
-      } else {
-        console.log('❌ Network response not OK');
-        return false;
-      }
-    } catch (error) {
-      console.log('❌ Network not available:', error.message);
-      return false;
-    }
-  }
-
-  // Test the API with your token
-  async testOneMapAPI() {
-    try {
-      console.log('🧪 Testing OneMap API with your token...');
-      const testResult = await this.searchPlaces('singapore');
-      
-      if (testResult.found > 0) {
-        console.log(`✅ API test successful: Found ${testResult.found} results`);
-        return { success: true, message: `API working! Found ${testResult.found} results for 'singapore'` };
-      } else {
-        console.log('⚠️ API responded but found no results');
-        return { success: false, message: 'API responded but found no results - check search terms' };
-      }
-    } catch (error) {
-      console.error('❌ OneMap API test failed:', error);
-      return { success: false, message: `API test failed: ${error.message}` };
-    }
-  }
-
-  // Quick token validation test
-  async validateToken() {
-    try {
-      console.log('🔑 Validating OneMap token...');
-      const url = `${BASE_URL}/api/common/elastic/search?searchVal=200640&returnGeom=Y&getAddrDetails=Y&pageNum=1`;
-      
-      const fetchPromise = fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': this.accessToken,
-          'Accept': 'application/json',
-        }
-      });
-      
-      const timeoutPromise = this.createTimeoutPromise(10000);
-      const response = await Promise.race([fetchPromise, timeoutPromise]);
-      
-      if (response.status === 401) {
-        return { valid: false, message: 'Token is invalid or expired' };
-      } else if (response.status === 403) {
-        return { valid: false, message: 'Token lacks required permissions' };
-      } else if (response.ok) {
-        return { valid: true, message: 'Token is valid' };
-      } else {
-        return { valid: false, message: `Unexpected response: ${response.status}` };
-      }
-    } catch (error) {
-      return { valid: false, message: `Validation error: ${error.message}` };
-    }
-  }
-
-  // Comprehensive network and API testing
-  async testNetworkConnectivity() {
-    console.log('🧪 Testing basic network connectivity...');
-    
-    const tests = [
-      {
-        name: 'Basic HTTP Test',
-        test: async () => {
-          const fetchPromise = fetch('https://httpbin.org/get');
-          const timeoutPromise = this.createTimeoutPromise(10000);
-          const response = await Promise.race([fetchPromise, timeoutPromise]);
-          const data = await response.json();
-          return { success: true, data: data.url };
-        }
-      },
-      {
-        name: 'OneMap Domain Test',
-        test: async () => {
-          const fetchPromise = fetch('https://www.onemap.gov.sg', { method: 'HEAD' });
-          const timeoutPromise = this.createTimeoutPromise(10000);
-          const response = await Promise.race([fetchPromise, timeoutPromise]);
-          return { success: response.ok, data: `Status: ${response.status}` };
-        }
-      },
-      {
-        name: 'OneMap API Token Validation',
-        test: async () => {
-          const result = await this.validateToken();
-          return { success: result.valid, data: result.message };
-        }
-      },
-      {
-        name: 'OneMap API Search Test',
-        test: async () => {
-          const result = await this.testOneMapAPI();
-          return { success: result.success, data: result.message };
-        }
-      }
-    ];
-
-    const results = [];
-
-    for (const testCase of tests) {
-      try {
-        console.log(`Testing: ${testCase.name}`);
-        
-        const startTime = Date.now();
-        const response = await testCase.test();
-        const duration = Date.now() - startTime;
-        
-        console.log(`${response.success ? '✅' : '❌'} ${testCase.name}: ${response.success ? 'SUCCESS' : 'FAILED'} (${duration}ms) - ${response.data}`);
-        results.push({
-          name: testCase.name,
-          success: response.success,
-          duration,
-          data: response.data,
-          error: null
-        });
-        
-      } catch (error) {
-        console.error(`❌ ${testCase.name}: FAILED - ${error.message}`);
-        results.push({
-          name: testCase.name,
-          success: false,
-          duration: null,
-          data: null,
-          error: error.message
-        });
-      }
-      
-      // Small delay between tests
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-
-    // Summary
-    const successful = results.filter(r => r.success).length;
-    console.log(`\n📊 Network Test Summary: ${successful}/${results.length} tests passed`);
-    
-    return results;
   }
 
   // Generate realistic status based on category and time
