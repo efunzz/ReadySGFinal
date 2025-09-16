@@ -14,7 +14,7 @@ export default function MenuStackNavigator() {
         name="MenuHome" 
         component={MenuScreen}
         options={{ 
-          headerShown: false // MenuScreen handles its own header
+          headerShown: false 
         }}
       />
       <Stack.Screen 

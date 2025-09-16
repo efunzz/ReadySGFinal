@@ -1,24 +1,37 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, Modal, Alert } from 'react-native';
-import EmergencyKitCard from '../components/EmergencyKitCard'; // Import the card component
-
-//Import colors
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, Modal, Alert, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import EmergencyKitCard from '../components/EmergencyKitCard';
 import { colors } from '../constants/theme';
+import { AIChatbotService } from '../services/aiChatbotService';
 
 export default function PreparednessToolsScreen({ navigation }) {
   const [checkedItems, setCheckedItems] = useState({});
   const [collectedItems, setCollectedItems] = useState({});
-  const [selectedTool, setSelectedTool] = useState('collection'); // Changed default
+  const [selectedTool, setSelectedTool] = useState('collection');
   const [showCamera, setShowCamera] = useState(null);
   const [streak, setStreak] = useState(7);
+  
+  // CHAT STATE
+  const [chatMessages, setChatMessages] = useState([
+    {
+      id: 1,
+      text: "Hi! I'm your Emergency AI Chatbot. I can help you with preparedness questions, explain quiz answers, or suggest items for your emergency kit. What would you like to know?",
+      isBot: true,
+      timestamp: new Date()
+    }
+  ]);
+  const [inputText, setInputText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
+  // TOOLS ARRAY - Updated with AI Chatbot
   const tools = [
-    { id: 'collection', name: 'Kit Collection', icon: '🎴' }, // Changed from checklist
+    { id: 'collection', name: 'Kit Collection', icon: '🎴' },
     { id: 'quiz', name: 'Safety Quiz', icon: '🧠' },
-    // Removed progress tab as requested
+    { id: 'chat', name: 'AI Chatbot', icon: '🤖' },
   ];
 
-  // Updated emergency kit items with gamification data
+  // Emergency kit items with gamification data
   const essentialItems = [
     { id: 'torchlight', name: 'Torchlight', description: 'Essential for power outages', rarity: 'common', category: 'essential' },
     { id: 'batteries', name: 'Extra Batteries', description: 'Power your devices when grid fails', rarity: 'common', category: 'essential' },
@@ -51,6 +64,121 @@ export default function PreparednessToolsScreen({ navigation }) {
     }
   ];
 
+  // CHAT FUNCTIONS
+  const sendMessage = async () => {
+    if (!inputText.trim()) return;
+
+    const userMessage = {
+      id: Date.now(),
+      text: inputText,
+      isBot: false,
+      timestamp: new Date()
+    };
+
+    setChatMessages(prev => [...prev, userMessage]);
+    const currentInput = inputText;
+    setInputText('');
+    setIsLoading(true);
+
+    try {
+      // Build user context for AI
+      const userContext = {
+        collectedItems: getCollectionStats(),
+        currentScreen: 'preparedness_tools',
+        location: 'Singapore',
+        totalItems: [...essentialItems, ...optionalItems].length,
+        essentialItems: essentialItems.length,
+        streak: streak
+      };
+
+      // Use AI Chatbot service
+      const botResponse = await AIChatbotService.getResponse(currentInput, userContext);
+      
+      const botMessage = {
+        id: Date.now() + 1,
+        text: botResponse,
+        isBot: true,
+        timestamp: new Date()
+      };
+
+      setChatMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      console.error('Chat error:', error);
+      const errorMessage = {
+        id: Date.now() + 1,
+        text: "Sorry, I'm having trouble connecting to my knowledge base right now. Please try again later, or contact emergency services at 995 for urgent matters.",
+        isBot: true,
+        timestamp: new Date()
+      };
+      setChatMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // CHAT RENDER FUNCTION
+  const renderChat = () => (
+    <View style={styles.chatContainer}>
+      <View style={styles.chatHeader}>
+        <Text style={styles.chatTitle}>🤖 AI Chatbot</Text>
+        <Text style={styles.chatSubtitle}>Ask me anything about emergency preparedness!</Text>
+      </View>
+  
+      <ScrollView 
+        style={styles.messagesContainer}
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={true}
+      >
+        {chatMessages.map((item) => (
+          <View 
+            key={item.id}
+            style={[
+              styles.messageWrapper,
+              item.isBot ? styles.botMessageWrapper : styles.userMessageWrapper
+            ]}
+          >
+            <View style={[
+              styles.messageBubble,
+              item.isBot ? styles.botMessage : styles.userMessage
+            ]}>
+              <Text style={[
+                styles.messageText,
+                item.isBot ? styles.botMessageText : styles.userMessageText
+              ]}>
+                {item.text}
+              </Text>
+            </View>
+          </View>
+        ))}
+        
+        {isLoading && (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>🤖 AI Chatbot is thinking...</Text>
+          </View>
+        )}
+      </ScrollView>
+  
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.textInput}
+          value={inputText}
+          onChangeText={setInputText}
+          placeholder="Ask about emergency preparedness..."
+          multiline
+          maxLength={500}
+        />
+        <TouchableOpacity 
+          style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
+          onPress={sendMessage}
+          disabled={!inputText.trim() || isLoading}
+        >
+          <Text style={styles.sendButtonText}>Send</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  // EXISTING FUNCTIONS
   const handleCollectItem = (itemId) => {
     setShowCamera(itemId);
   };
@@ -59,7 +187,6 @@ export default function PreparednessToolsScreen({ navigation }) {
     setCollectedItems(prev => ({ ...prev, [itemId]: true }));
     setShowCamera(null);
     
-    // Show celebration alert
     Alert.alert(
       "🎉 Item Collected!",
       "Great job! You're one step closer to being fully prepared!",
@@ -84,7 +211,7 @@ export default function PreparednessToolsScreen({ navigation }) {
     const stats = getCollectionStats();
     
     return (
-      <ScrollView style={styles.toolContent} showsVerticalScrollIndicator={false}>
+      <View style={styles.toolContent}>
         {/* Collection Header */}
         <View style={styles.collectionHeader}>
           <Text style={styles.collectionTitle}>🎮 Emergency Kit Collection</Text>
@@ -159,12 +286,12 @@ export default function PreparednessToolsScreen({ navigation }) {
             <Text style={styles.achievementDesc}>You've collected everything! Ready for any emergency! 🎉</Text>
           </View>
         )}
-      </ScrollView>
+      </View>
     );
   };
 
   const renderQuiz = () => (
-    <ScrollView style={styles.toolContent} showsVerticalScrollIndicator={false}>
+    <View style={styles.toolContent}>
       <Text style={styles.toolDescription}>
         Test your emergency preparedness knowledge:
       </Text>
@@ -194,21 +321,32 @@ export default function PreparednessToolsScreen({ navigation }) {
       <TouchableOpacity style={styles.submitButton}>
         <Text style={styles.submitButtonText}>Submit Quiz</Text>
       </TouchableOpacity>
-    </ScrollView>
+    </View>
   );
 
   const renderContent = () => {
     switch (selectedTool) {
       case 'collection': return renderCollection();
       case 'quiz': return renderQuiz();
+      case 'chat': return renderChat();
       default: return renderCollection();
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.pageTitle}>Preparedness Tools</Text>
-      <Text style={styles.pageSubtitle}>Build your emergency readiness</Text>
+    <ScrollView 
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Header that scrolls with content - matching MenuScreen style */}
+      <View style={styles.headerBackground}>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+          <View style={styles.header}>
+            <Text style={styles.appTitle}>Preparedness Tools</Text>
+            <Text style={styles.subtitle}>Build your emergency readiness</Text>
+          </View>
+        </SafeAreaView>
+      </View>
       
       {/* Tool Tabs */}
       <View style={styles.toolTabs}>
@@ -233,6 +371,8 @@ export default function PreparednessToolsScreen({ navigation }) {
       </View>
 
       {renderContent()}
+
+      <View style={styles.bottomPadding} />
 
       {/* Camera Modal */}
       <Modal
@@ -268,29 +408,46 @@ export default function PreparednessToolsScreen({ navigation }) {
           </View>
         </View>
       </Modal>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f4f8',
+    backgroundColor: colors.background,
   },
-  pageTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2d3748',
-    textAlign: 'center',
-    marginTop: 60,
-    marginBottom: 8,
-  },
-  pageSubtitle: {
-    fontSize: 16,
-    color: '#718096',
-    textAlign: 'center',
+  
+  // Header styling that matches MenuScreen
+  headerBackground: {
+    backgroundColor: colors.primary,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     marginBottom: 24,
   },
+  
+  safeArea: {
+    // SafeAreaView handles the notch padding
+  },
+  
+  header: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+    alignItems: 'center',
+  },
+  
+  appTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 6,
+  },
+  
+  subtitle: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.9)',
+  },
+  
   toolTabs: {
     flexDirection: 'row',
     paddingHorizontal: 20,
@@ -336,7 +493,120 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // NEW COLLECTION STYLES
+  // CHAT STYLES
+  chatContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingBottom: 100, 
+  },
+  chatHeader: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 12, 
+    marginBottom: 12, 
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  chatTitle: {
+    fontSize: 16, 
+    fontWeight: 'bold',
+    color: '#2d3748',
+    marginBottom: 2, 
+  },
+  chatSubtitle: {
+    fontSize: 12, 
+    color: '#718096',
+    textAlign: 'center',
+  },
+  messagesContainer: {
+    flex: 1, 
+    marginBottom: 100, 
+  },
+  messageWrapper: {
+    marginBottom: 8, 
+  },
+  botMessageWrapper: {
+    alignItems: 'flex-start',
+  },
+  userMessageWrapper: {
+    alignItems: 'flex-end',
+  },
+  messageBubble: {
+    maxWidth: '80%',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 20,
+  },
+  botMessage: {
+    backgroundColor: '#e2e8f0',
+    borderBottomLeftRadius: 6,
+  },
+  userMessage: {
+    backgroundColor: colors.primary,
+    borderBottomRightRadius: 6,
+  },
+  messageText: {
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  botMessageText: {
+    color: '#2d3748',
+  },
+  userMessageText: {
+    color: 'white',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#718096',
+    fontStyle: 'italic',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'white',
+    borderRadius: 25,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    alignItems: 'flex-end',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    marginTop: 12,
+    marginBottom: 20,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#2d3748',
+    maxHeight: 100,
+    paddingVertical: 8,
+  },
+  sendButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginLeft: 12,
+  },
+  sendButtonDisabled: {
+    backgroundColor: '#cbd5e0',
+  },
+  sendButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+
+  // COLLECTION STYLES
   collectionHeader: {
     backgroundColor: 'white',
     borderRadius: 12,
@@ -410,7 +680,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingHorizontal: 5, // Small padding to center the cards perfectly
+    paddingHorizontal: 5,
   },
   achievementBanner: {
     backgroundColor: '#fef3c7',
@@ -435,6 +705,72 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#a16207',
     textAlign: 'center',
+  },
+
+  // QUIZ STYLES
+  quizCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  questionNumber: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  questionText: {
+    fontSize: 16,
+    color: '#2d3748',
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  quizOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#f7fafc',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  optionCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#e2e8f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  optionLetter: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#4a5568',
+  },
+  optionText: {
+    fontSize: 14,
+    color: '#4a5568',
+    flex: 1,
+  },
+  submitButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 40,
+  },
+  submitButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 
   // CAMERA MODAL STYLES
@@ -505,64 +841,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // EXISTING QUIZ STYLES
-  quizCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
-  },
-  questionNumber: {
-    fontSize: 12,
-    color: colors.primary,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  questionText: {
-    fontSize: 16,
-    color: '#2d3748',
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  quizOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#f7fafc',
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  optionCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#e2e8f0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  optionLetter: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#4a5568',
-  },
-  optionText: {
-    fontSize: 14,
-    color: '#4a5568',
-    flex: 1,
-  },
-  submitButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 40,
-  },
-  submitButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+  bottomPadding: {
+    height: 100,
   },
 });
