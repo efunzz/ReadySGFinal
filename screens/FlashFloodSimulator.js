@@ -3,6 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated, Alert, ImageBackgro
 import { colors, spacing, borderRadius, fontSize } from '../constants/theme';
 import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
+import { BadgeService } from '../services/badgeService';
+
+
 
 const { width, height } = Dimensions.get('window');
 
@@ -190,6 +193,7 @@ export default function FlashFloodSimulator({ navigation, route }) {
       });
     };
   }, []);
+  
 
   const loadSounds = async () => {
     try {

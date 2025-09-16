@@ -7,6 +7,7 @@ import SignupScreen from '../screens/auth/SignUpScreen';
  // Add this import
 import TabNavigator from './TabNavigator';
 
+
 const Stack = createStackNavigator();
 
 export default function StackNavigator() {

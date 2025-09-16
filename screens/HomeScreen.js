@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import * as Location from 'expo-location';
 import { colors } from '../constants/theme';
 import { weatherService } from '../services/weatherService';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeScreen({ navigation }) {
   const [userName, setUserName] = useState('Guest');
@@ -14,6 +15,7 @@ export default function HomeScreen({ navigation }) {
   const [weatherData, setWeatherData] = useState(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
 
   useEffect(() => {
     fetchUserData();
@@ -173,10 +175,16 @@ export default function HomeScreen({ navigation }) {
       >
         {/* My Badges Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>My Badges</Text>
+          <TouchableOpacity 
+            style={styles.sectionHeader}
+            onPress={() => navigation.navigate('Badges')} // Navigate to Badges Stack
+          >
+            <Text style={styles.sectionTitle}>My Badges</Text>
+            <Ionicons name="chevron-forward" size={20} color="#718096" />
+          </TouchableOpacity>
           <View style={styles.badgesContainer}>
-            <Text style={styles.badgesPlaceholder}>Currently no badges</Text>
-            <Text style={styles.badgesSubtext}>Complete quests to receive badges</Text>
+            <Text style={styles.badgesPlaceholder}>Tap to view all badges</Text>
+            <Text style={styles.badgesSubtext}>Complete learning modules to earn badges</Text>
           </View>
         </View>
         {/* Quick Actions Grid */}
@@ -445,8 +453,8 @@ const styles = StyleSheet.create({
   
   sectionHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
   },
   
