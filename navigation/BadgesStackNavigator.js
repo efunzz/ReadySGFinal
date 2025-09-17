@@ -1,7 +1,7 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import BadgesScreen from '../screens/BadgesScreen'; 
-import BadgeDetailScreen from '../screens/BadgeDetailScreen';
+import BadgesScreen from '../screens/badges/BadgesScreen'; 
+import BadgeDetailScreen from '../screens/badges/BadgeDetailScreen';
 
 const Stack = createStackNavigator();
 

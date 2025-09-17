@@ -10,7 +10,7 @@ import PreparednessToolsScreen from '../screens/PreparednessToolsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import LocalResourcesScreen from '../screens/LocalResourcesScreen';
 import BadgesStackNavigator from './BadgesStackNavigator'; 
-import BadgeTestScreen from '../screens/BadgeTestScreen';
+import BadgeTestScreen from '../screens/badges/BadgeTestScreen';
 
 
 

@@ -10,9 +10,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { BadgeService } from '../services/badgeService';
-import { supabase } from '../lib/supabase';
-import { colors } from '../constants/theme';
+import { BadgeService } from '../../services/badgeService';
+import { supabase } from '../../lib/supabase';
+import { colors } from '../../constants/theme';
 
 const BadgeDetailScreen = ({ route, navigation }) => {
   const { badgeId } = route.params;

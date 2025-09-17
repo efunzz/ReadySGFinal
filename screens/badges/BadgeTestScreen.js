@@ -31,7 +31,7 @@ const BadgeTestScreen = ({ navigation }) => {
     try {
       addMessage('🔄 Testing Supabase connection...');
       
-      const { supabase } = await import('../lib/supabase');
+      const { supabase } = await import('../../lib/supabase');
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
@@ -51,7 +51,7 @@ const BadgeTestScreen = ({ navigation }) => {
     try {
       addMessage('🔄 Testing all tables...');
       
-      const { supabase } = await import('../lib/supabase');
+      const { supabase } = await import('../../lib/supabase');
       
       // Test badges table
       const { data: badges, error: badgeError } = await supabase
@@ -89,7 +89,7 @@ const BadgeTestScreen = ({ navigation }) => {
     try {
       addMessage('🔄 Initializing user badges...');
       
-      const { supabase } = await import('../lib/supabase');
+      const { supabase } = await import('../../lib/supabase');
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -201,7 +201,7 @@ const BadgeTestScreen = ({ navigation }) => {
     try {
       addMessage('🔄 Testing BadgeService functions...');
       
-      const { supabase } = await import('../lib/supabase');
+      const { supabase } = await import('../../lib/supabase');
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -261,7 +261,7 @@ const debugBadgeQuery = async () => {
     try {
       addMessage('🔍 Debug: Testing badge query...');
       
-      const { supabase } = await import('../lib/supabase');
+      const { supabase } = await import('../../lib/supabase');
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -366,7 +366,7 @@ const debugBadgeQuery = async () => {
     try {
       addMessage('🔄 Testing module completion...');
       
-      const { supabase } = await import('../lib/supabase');
+      const { supabase } = await import('../../lib/supabase');
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
