@@ -1,3 +1,4 @@
+// services/badgeService.js
 import { supabase } from '../lib/supabase'; // Use your existing supabase import path
 
 export const BadgeService = {
@@ -74,7 +75,7 @@ export const BadgeService = {
         query = query.eq('badges.category', category);
       }
 
-      const { data, error } = await query.order('badges.level', { ascending: true });
+      const { data, error } = await query.order('level', { ascending: true, foreignTable: 'badges' });
 
       if (error) throw error;
       
@@ -138,6 +139,8 @@ export const BadgeService = {
           progress_percentage: 100,
           score: score,
           completed_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id,module_id'
         })
         .select();
 
@@ -218,7 +221,7 @@ export const BadgeService = {
         .from('user_badges')
         .select(`
           *,
-          badges (
+          badges!inner (
             badge_key,
             title,
             description,

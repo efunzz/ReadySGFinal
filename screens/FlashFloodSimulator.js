@@ -3,7 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated, Alert, ImageBackgro
 import { colors, spacing, borderRadius, fontSize } from '../constants/theme';
 import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
+
+//imports for linking to badges backend
 import { BadgeService } from '../services/badgeService';
+import { supabase } from '../lib/supabase';
 
 
 
@@ -288,7 +291,7 @@ export default function FlashFloodSimulator({ navigation, route }) {
     }, 3000);
   };
 
-  const showFinalResults = () => {
+  const showFinalResults = async () => {
     const totalSteps = currentScenario.steps.length;
     const percentage = Math.round((score / (totalSteps * 10)) * 100);
     
@@ -300,11 +303,41 @@ export default function FlashFloodSimulator({ navigation, route }) {
     } else {
       resultMessage = 'Keep learning! Practice makes perfect.';
     }
-
+  
+    //Add badge completion tracking
+    let badgeMessage = '';
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Complete the flash flood module - this triggers badge updates!
+        const result = await BadgeService.completeModule(
+          user.id, 
+          'flash_flood_simulator', 
+          percentage // Use the percentage as score
+        );
+  
+        badgeMessage = `\n\n🎉 You earned ${result.xpEarned} XP!\nCheck your badges for progress!`;
+      }
+    } catch (error) {
+      console.error('Badge completion error:', error);
+      // Don't show error to user, just log it
+    }
+  
     Alert.alert(
       'Mission Complete!',
-      `${resultMessage}\n\nScore: ${score}/${totalSteps * 10}\nAccuracy: ${percentage}%`,
+      `${resultMessage}\n\nScore: ${score}/${totalSteps * 10}\nAccuracy: ${percentage}%${badgeMessage}`,
       [
+        { 
+          text: 'View Badges', 
+          onPress: () => {
+            navigation.goBack(); // Go back to menu first
+            setTimeout(() => {
+              // Navigate to badges tab after a short delay
+              navigation.navigate('Badges');
+            }, 100);
+          }
+        },
         { text: 'Try Again', onPress: () => restartSimulator() },
         { text: 'Back to Menu', onPress: () => navigation.goBack() }
       ]
@@ -393,6 +426,41 @@ export default function FlashFloodSimulator({ navigation, route }) {
       );
     }
   };
+  const renderTestButton = () => {
+    // Only show in development/testing
+    if (__DEV__) {
+      return (
+        <TouchableOpacity 
+          style={styles.testBadgeButton}
+          onPress={async () => {
+            try {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (user) {
+                const result = await BadgeService.completeModule(
+                  user.id, 
+                  'flash_flood_simulator', 
+                  95
+                );
+                Alert.alert(
+                  'Badge Test Complete!',
+                  `Earned ${result.xpEarned} XP. Check badges tab!`,
+                  [
+                    { text: 'View Badges', onPress: () => navigation.navigate('Badges') },
+                    { text: 'OK', style: 'cancel' }
+                  ]
+                );
+              }
+            } catch (error) {
+              Alert.alert('Error', error.message);
+            }
+          }}
+        >
+          <Text style={styles.testBadgeButtonText}>🧪 Test Badge Earn</Text>
+        </TouchableOpacity>
+      );
+    }
+    return null;
+  };
 
   return (
     <View style={styles.container}>
@@ -428,6 +496,7 @@ export default function FlashFloodSimulator({ navigation, route }) {
 
         {/* Game content overlay - directly rendered, not in contentOverlay */}
         {renderGameContent()}
+        {renderTestButton()}
       </ImageBackground>
     </View>
   );

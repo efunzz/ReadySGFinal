@@ -10,6 +10,7 @@ import PreparednessToolsScreen from '../screens/PreparednessToolsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import LocalResourcesScreen from '../screens/LocalResourcesScreen';
 import BadgesStackNavigator from './BadgesStackNavigator'; 
+import BadgeTestScreen from '../screens/BadgeTestScreen';
 
 
 
@@ -161,6 +162,23 @@ export default function TabNavigator({ session }) {
         }}
       >
         {(props) => <BadgesStackNavigator {...props} session={session} />}
+      </Tab.Screen>
+      <Tab.Screen
+        name="Test"
+        options={{
+          tabBarIcon: ({ focused, color }) => (
+            <View style={styles.tabIconContainer}>
+              <Ionicons
+                name={focused ? 'flask' : 'flask-outline'}
+                size={28}
+                color={color}
+              />
+              {focused && <View style={styles.tabBarIndicator} />}
+            </View>
+          ),
+        }}
+      >
+        {(props) => <BadgeTestScreen {...props} />}
       </Tab.Screen>
     </Tab.Navigator>
   );
