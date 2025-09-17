@@ -4,6 +4,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 // Import Menu-related screens
 import MenuScreen from '../screens/MenuScreen';
 import FlashFloodSimulator from '../screens/FlashFloodSimulator';
+import FlashFloodLessonsScreen from '../screens/FlashFloodLessonsScreen';
 
 
 const Stack = createStackNavigator();
@@ -16,6 +17,13 @@ export default function MenuStackNavigator() {
         component={MenuScreen}
         options={{ 
           headerShown: false 
+        }}
+      />
+       <Stack.Screen 
+        name="FlashFloodLessons" 
+        component={FlashFloodLessonsScreen}
+        options={{ 
+          headerShown: false
         }}
       />
       <Stack.Screen 

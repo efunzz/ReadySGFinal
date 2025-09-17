@@ -7,18 +7,19 @@ import { Ionicons } from '@expo/vector-icons';
 export default function MenuScreen({ navigation }) {
   const handleCardPress = (cardTitle) => {
     const scenarioMap = {
-      'Flash Floods': 'FlashFloodSimulator',
-      'Fire Safety': 'FireSafetySimulator',
-      'First Aid & Medical': 'FirstAidSimulator',
-      'Natural Disasters': 'NaturalDisasterSimulator'
+      'Flash Floods': 'FlashFloodLessons', 
+      'Fire Safety': 'FireSafetyLessons', 
+      'First Aid & Medical': 'FirstAidLessons', 
+      'Natural Disasters': 'NaturalDisasterLessons' 
     };
-
-    const simulator = scenarioMap[cardTitle];
+  
+    const destination = scenarioMap[cardTitle];
     
-    if (simulator === 'FlashFloodSimulator') {
-      navigation.navigate('FlashFloodSimulator', { scenario: 'before' });
+    if (destination === 'FlashFloodLessons') {
+      navigation.navigate('FlashFloodLessons');
     } else {
-      console.log(`Pressed: ${cardTitle} - ${simulator} not implemented yet`);
+      // For future courses that don't exist yet
+      Alert.alert('Coming Soon', `${cardTitle} lessons will be available soon!`);
     }
   };
 
