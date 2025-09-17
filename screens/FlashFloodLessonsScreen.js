@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/theme';
+import LessonCard from '../components/LessonCard'; // Import the reusable component
 
 const FlashFloodLessonsScreen = ({ navigation }) => {
   const lessons = [
@@ -47,8 +48,8 @@ const FlashFloodLessonsScreen = ({ navigation }) => {
     }
   ];
 
-  const handleLessonPress = (scenarioId) => {
-    navigation.navigate('FlashFloodSimulator', { scenario: scenarioId });
+  const handleLessonPress = (lesson) => {
+    navigation.navigate('FlashFloodSimulator', { scenario: lesson.id });
   };
 
   const getDifficultyColor = (difficulty) => {
@@ -148,7 +149,12 @@ const FlashFloodLessonsScreen = ({ navigation }) => {
         <View style={styles.lessonsSection}>
           <Text style={styles.sectionTitle}>Choose Your Lesson</Text>
           {lessons.map((lesson) => (
-            <LessonCard key={lesson.id} lesson={lesson} />
+            <LessonCard 
+              key={lesson.id} 
+              lesson={lesson} 
+              onPress={handleLessonPress}
+              getDifficultyColor={getDifficultyColor}
+            />
           ))}
         </View>
 
