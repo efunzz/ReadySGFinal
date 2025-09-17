@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius, fontSize } from '../constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function MenuScreen({ navigation }) {
   const handleCardPress = (cardTitle) => {
@@ -38,12 +39,18 @@ export default function MenuScreen({ navigation }) {
       
       {/* My Badges Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>My Badges</Text>
-        <View style={styles.badgesContainer}>
-          <Text style={styles.badgesPlaceholder}>Currently no badges</Text>
-          <Text style={styles.badgesSubtext}>Complete courses to receive badges</Text>
+          <TouchableOpacity 
+            style={styles.sectionHeader}
+            onPress={() => navigation.navigate('Badges')} // Navigate to Badges Stack
+          >
+            <Text style={styles.sectionTitle}>My Badges</Text>
+            <Ionicons name="chevron-forward" size={20} color="#718096" />
+          </TouchableOpacity>
+          <View style={styles.badgesContainer}>
+            <Text style={styles.badgesPlaceholder}>Tap to view all badges</Text>
+            <Text style={styles.badgesSubtext}>Complete learning modules to earn badges</Text>
+          </View>
         </View>
-      </View>
 
       {/* Emergency Training Courses */}
       <View style={styles.section}>
@@ -268,6 +275,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text.light,
     textAlign: 'center',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   
   // Course cards
