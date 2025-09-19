@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, Modal, Alert, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import EmergencyKitCard from '../components/EmergencyKitCard';
 import { colors } from '../constants/theme';
 import { AIChatbotService } from '../services/aiChatbotService';
+import { BadgeService } from '../services/badgeService';
+import { supabase } from '../lib/supabase';
 
 export default function PreparednessToolsScreen({ navigation }) {
   const [checkedItems, setCheckedItems] = useState({});
   const [collectedItems, setCollectedItems] = useState({});
   const [selectedTool, setSelectedTool] = useState('collection');
   const [showCamera, setShowCamera] = useState(null);
-  const [streak, setStreak] = useState(7);
+  const [userStats, setUserStats] = useState({ total_xp: 0, badges_earned: 0 });
   
   // CHAT STATE
   const [chatMessages, setChatMessages] = useState([
@@ -24,14 +26,40 @@ export default function PreparednessToolsScreen({ navigation }) {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // TOOLS ARRAY - Updated with AI Chatbot
+  // QUIZ STATE
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedAnswers, setSelectedAnswers] = useState({});
+  const [showResults, setShowResults] = useState(false);
+  const [quizCompleted, setQuizCompleted] = useState(false);
+
+  // Load user data on component mount
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const stats = await BadgeService.getUserStats(user.id);
+        setUserStats(stats);
+        
+        // Load saved collection progress from backend if available
+        // This would require adding collection tracking to your backend
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
+  };
+
+  // TOOLS ARRAY
   const tools = [
     { id: 'collection', name: 'Kit Collection', icon: '🎴' },
     { id: 'quiz', name: 'Safety Quiz', icon: '🧠' },
     { id: 'chat', name: 'AI Chatbot', icon: '🤖' },
   ];
 
-  // Emergency kit items with gamification data
+  // Emergency kit items (same as before)
   const essentialItems = [
     { id: 'torchlight', name: 'Torchlight', description: 'Essential for power outages', rarity: 'common', category: 'essential' },
     { id: 'batteries', name: 'Extra Batteries', description: 'Power your devices when grid fails', rarity: 'common', category: 'essential' },
@@ -51,20 +79,107 @@ export default function PreparednessToolsScreen({ navigation }) {
     { id: 'emergency_numbers', name: 'Emergency Numbers', description: 'Quick access to 995 and services', rarity: 'common', category: 'optional' },
   ];
 
+  // ENHANCED QUIZ QUESTIONS based on SCDF Emergency Handbook
   const quizQuestions = [
     {
-      question: "What should you do if you're caught in a flash flood while driving?",
-      options: ["Drive faster through the water", "Abandon your car and seek higher ground", "Wait in the car", "Turn around slowly"],
-      correct: 1
+      question: "What is the first step when performing CPR?",
+      options: [
+        "Start chest compressions immediately",
+        "Check for responsiveness by tapping shoulders and shouting", 
+        "Give mouth-to-mouth ventilation",
+        "Call 995"
+      ],
+      correct: 1,
+      explanation: "Always determine responsiveness first by tapping the casualty's shoulders and shouting. This ensures the person actually needs CPR.",
+      xp: 25
     },
     {
-      question: "How much water should you store per person per day?",
-      options: ["1 cup", "1 liter", "1 gallon", "2 gallons"],
-      correct: 2
+      question: "During a flash flood in Singapore, what should you do if your car stalls in rising water?",
+      options: [
+        "Stay in the car and wait for help",
+        "Try to restart the engine",
+        "Abandon the car immediately and get to higher ground",
+        "Roll down windows and wait"
+      ],
+      correct: 2,
+      explanation: "The SCDF advises 'Turn Around, Don't Drown.' If your vehicle stalls in rising water, abandon it immediately and seek higher ground. Even 60cm of water can sweep away vehicles.",
+      xp: 30
+    },
+    {
+      question: "What does the P.A.S.S. method refer to in fire safety?",
+      options: [
+        "Panic, Alert, Seek, Support",
+        "Pull, Aim, Squeeze, Sweep",
+        "Prepare, Act, Stop, Survey", 
+        "Plan, Assess, Secure, Signal"
+      ],
+      correct: 1,
+      explanation: "P.A.S.S. is the correct method for using a fire extinguisher: Pull the safety pin, Aim the nozzle at the base of the fire, Squeeze the lever, and Sweep side to side.",
+      xp: 20
+    },
+    {
+      question: "For severe bleeding with no foreign objects, what should you do after putting on protective gloves?",
+      options: [
+        "Apply direct pressure immediately", 
+        "Elevate the injured limb above the heart, then apply direct pressure with sterile gauze",
+        "Clean the wound first",
+        "Apply a tourniquet"
+      ],
+      correct: 1,
+      explanation: "According to SCDF guidelines: elevate the injured limb above the heart, place sterile gauze, apply direct pressure, then secure with bandage.",
+      xp: 25
+    },
+    {
+      question: "What should NOT be in your Ready Bag torchlight?",
+      options: [
+        "LED bulb",
+        "Spare bulbs", 
+        "Batteries fitted inside",
+        "Hand strap"
+      ],
+      correct: 2,
+      explanation: "SCDF recommends storing torchlight WITHOUT batteries fitted to prevent corrosion and battery drain. Keep extra batteries separately.",
+      xp: 15
+    },
+    {
+      question: "How deep should chest compressions be during CPR?",
+      options: [
+        "2-3 centimeters",
+        "5 centimeters",
+        "8 centimeters", 
+        "10 centimeters"
+      ],
+      correct: 1,
+      explanation: "SCDF guidelines specify compressions should be 5cm deep at a rate of 100+ per minute for effective CPR.",
+      xp: 20
+    },
+    {
+      question: "In Singapore's context, how much moving water can knock you down?",
+      options: [
+        "30 centimeters",
+        "15 centimeters",
+        "45 centimeters",
+        "60 centimeters"
+      ],
+      correct: 1,
+      explanation: "According to SCDF, just 15cm of moving water can knock you down. This is why you should never walk through moving floodwater.",
+      xp: 25
+    },
+    {
+      question: "What is the correct compression-to-ventilation ratio for CPR?",
+      options: [
+        "15:2",
+        "30:2", 
+        "20:1",
+        "30:1"
+      ],
+      correct: 1,
+      explanation: "The correct ratio is 30 chest compressions followed by 2 mouth-to-mouth ventilations, repeated until ambulance arrives.",
+      xp: 20
     }
   ];
 
-  // CHAT FUNCTIONS
+  // CHAT FUNCTIONS 
   const sendMessage = async () => {
     if (!inputText.trim()) return;
 
@@ -81,17 +196,15 @@ export default function PreparednessToolsScreen({ navigation }) {
     setIsLoading(true);
 
     try {
-      // Build user context for AI
       const userContext = {
         collectedItems: getCollectionStats(),
         currentScreen: 'preparedness_tools',
         location: 'Singapore',
         totalItems: [...essentialItems, ...optionalItems].length,
         essentialItems: essentialItems.length,
-        streak: streak
+        userXP: userStats.total_xp
       };
 
-      // Use AI Chatbot service
       const botResponse = await AIChatbotService.getResponse(currentInput, userContext);
       
       const botMessage = {
@@ -106,7 +219,7 @@ export default function PreparednessToolsScreen({ navigation }) {
       console.error('Chat error:', error);
       const errorMessage = {
         id: Date.now() + 1,
-        text: "Sorry, I'm having trouble connecting to my knowledge base right now. Please try again later, or contact emergency services at 995 for urgent matters.",
+        text: "Sorry, I'm having trouble connecting right now. Please try again later, or contact emergency services at 995 for urgent matters.",
         isBot: true,
         timestamp: new Date()
       };
@@ -116,7 +229,172 @@ export default function PreparednessToolsScreen({ navigation }) {
     }
   };
 
-  // CHAT RENDER FUNCTION
+  // QUIZ FUNCTIONS
+  const handleAnswerSelect = (questionIndex, answerIndex) => {
+    setSelectedAnswers(prev => ({
+      ...prev,
+      [questionIndex]: answerIndex
+    }));
+  };
+
+  const submitQuiz = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      let correctAnswers = 0;
+  
+      quizQuestions.forEach((question, index) => {
+        if (selectedAnswers[index] === question.correct) {
+          correctAnswers++;
+        }
+      });
+  
+      const percentage = Math.round((correctAnswers / quizQuestions.length) * 100);
+      
+      if (user) {
+        try {
+          // Pass ONLY the percentage number, not an object
+          const result = await BadgeService.completeModule(
+            user.id, 
+            'preparedness_quiz', 
+            percentage  // Just a number like 25, not {score:25, xp_earned:45...}
+          );
+  
+          const updatedStats = await BadgeService.getUserStats(user.id);
+          setUserStats(updatedStats);
+  
+          setShowResults(true);
+          setQuizCompleted(true);
+  
+          Alert.alert(
+            "Quiz Complete! 🎉",
+            `You got ${correctAnswers}/${quizQuestions.length} correct!\n\nScore: ${percentage}%\nXP Earned: ${result.xpEarned}`,
+            [
+              { 
+                text: 'View Progress', 
+                onPress: () => navigation.navigate('Badges') 
+              },
+              { text: "Continue", style: "default" }
+            ]
+          );
+        } catch (moduleError) {
+          console.error('Module completion error:', moduleError);
+          setShowResults(true);
+          setQuizCompleted(true);
+  
+          Alert.alert(
+            "Quiz Complete! 🎉",
+            `You got ${correctAnswers}/${quizQuestions.length} correct!\n\nScore: ${percentage}%`,
+            [{ text: "Great!", style: "default" }]
+          );
+        }
+      } else {
+        setShowResults(true);
+        setQuizCompleted(true);
+  
+        Alert.alert(
+          "Quiz Complete! 🎉", 
+          `You got ${correctAnswers}/${quizQuestions.length} correct!`,
+          [{ text: "Great!", style: "default" }]
+        );
+      }
+    } catch (error) {
+      console.error('Error submitting quiz:', error);
+      Alert.alert("Error", "Failed to submit quiz. Please try again.");
+    }
+  };
+
+  const resetQuiz = () => {
+    setCurrentQuestionIndex(0);
+    setSelectedAnswers({});
+    setShowResults(false);
+    setQuizCompleted(false);
+  };
+
+  // COLLECTION FUNCTIONS (same as before)
+  const handleCollectItem = (itemId) => {
+    setShowCamera(itemId);
+  };
+
+  const confirmCollection = async (itemId) => {
+    setCollectedItems(prev => ({ ...prev, [itemId]: true }));
+    setShowCamera(null);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const newStats = getCollectionStats();
+        const newPercentage = Math.round(((newStats.collected + 1) / newStats.total) * 100);
+        
+        try {
+          // Try to update module progress
+          await BadgeService.updateModuleProgress(
+            user.id, 
+            'emergency_kit_complete', 
+            newPercentage
+          );
+        } catch (progressError) {
+          console.log('Progress update failed, trying completeModule instead');
+          // If update fails, try complete module instead
+          if (newPercentage >= 100) {
+            await BadgeService.completeModule(user.id, 'emergency_kit_complete', 100);
+          }
+        }
+  
+        const updatedStats = await BadgeService.getUserStats(user.id);
+        setUserStats(updatedStats);
+  
+        if (newPercentage >= 100) {
+          Alert.alert(
+            "🎉 Emergency Kit Complete!",
+            "Amazing work! You've collected everything!\n\nYou're now fully prepared for emergencies!",
+            [
+              { 
+                text: 'View Progress', 
+                onPress: () => navigation.navigate('Badges') 
+              },
+              { text: "Awesome!", style: "default" }
+            ]
+          );
+        } else {
+          Alert.alert(
+            "🎉 Item Collected!",
+            `Great job! Kit progress: ${newPercentage}%`,
+            [{ text: "Awesome!", style: "default" }]
+          );
+        }
+      } else {
+        Alert.alert(
+          "🎉 Item Collected!",
+          "Great job! You're one step closer to being fully prepared!",
+          [{ text: "Awesome!", style: "default" }]
+        );
+      }
+    } catch (error) {
+      console.error('Error updating collection:', error);
+      Alert.alert(
+        "🎉 Item Collected!",
+        "Great job! You're one step closer to being fully prepared!",
+        [{ text: "Awesome!", style: "default" }]
+      );
+    }
+  };
+
+  const getCollectionStats = () => {
+    const allItems = [...essentialItems, ...optionalItems];
+    const collected = allItems.filter(item => collectedItems[item.id]).length;
+    const essentialCollected = essentialItems.filter(item => collectedItems[item.id]).length;
+    return { 
+      collected, 
+      total: allItems.length, 
+      essentialCollected,
+      essentialTotal: essentialItems.length,
+      percentage: Math.round((collected / allItems.length) * 100) 
+    };
+  };
+
+  // RENDER FUNCTIONS
   const renderChat = () => (
     <View style={styles.chatContainer}>
       <View style={styles.chatHeader}>
@@ -178,56 +456,25 @@ export default function PreparednessToolsScreen({ navigation }) {
     </View>
   );
 
-  // EXISTING FUNCTIONS
-  const handleCollectItem = (itemId) => {
-    setShowCamera(itemId);
-  };
-
-  const confirmCollection = (itemId) => {
-    setCollectedItems(prev => ({ ...prev, [itemId]: true }));
-    setShowCamera(null);
-    
-    Alert.alert(
-      "🎉 Item Collected!",
-      "Great job! You're one step closer to being fully prepared!",
-      [{ text: "Awesome!", style: "default" }]
-    );
-  };
-
-  const getCollectionStats = () => {
-    const allItems = [...essentialItems, ...optionalItems];
-    const collected = allItems.filter(item => collectedItems[item.id]).length;
-    const essentialCollected = essentialItems.filter(item => collectedItems[item.id]).length;
-    return { 
-      collected, 
-      total: allItems.length, 
-      essentialCollected,
-      essentialTotal: essentialItems.length,
-      percentage: Math.round((collected / allItems.length) * 100) 
-    };
-  };
-
   const renderCollection = () => {
     const stats = getCollectionStats();
     
     return (
       <View style={styles.toolContent}>
-        {/* Collection Header */}
         <View style={styles.collectionHeader}>
           <Text style={styles.collectionTitle}>🎮 Emergency Kit Collection</Text>
           <Text style={styles.collectionSubtitle}>
             Collect real emergency items to unlock your preparedness cards!
           </Text>
           
-          {/* Stats Bar */}
           <View style={styles.statsBar}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{stats.collected}/{stats.total}</Text>
               <Text style={styles.statLabel}>Total Items</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{streak}</Text>
-              <Text style={styles.statLabel}>Day Streak</Text>
+              <Text style={styles.statNumber}>{userStats.total_xp}</Text>
+              <Text style={styles.statLabel}>Total XP</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{stats.percentage}%</Text>
@@ -235,7 +482,6 @@ export default function PreparednessToolsScreen({ navigation }) {
             </View>
           </View>
 
-          {/* Progress Bar */}
           <View style={styles.progressContainer}>
             <Text style={styles.progressLabel}>Collection Progress</Text>
             <View style={styles.progressBarContainer}>
@@ -244,7 +490,6 @@ export default function PreparednessToolsScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Essential Items Section */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>
             ⚡ Essential Kit ({stats.essentialCollected}/{stats.essentialTotal})
@@ -261,7 +506,6 @@ export default function PreparednessToolsScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Optional Items Section */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>
             🎁 Bonus Items ({optionalItems.filter(item => collectedItems[item.id]).length}/{optionalItems.length})
@@ -278,7 +522,6 @@ export default function PreparednessToolsScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Achievement Section */}
         {stats.percentage === 100 && (
           <View style={styles.achievementBanner}>
             <Text style={styles.achievementIcon}>🏆</Text>
@@ -290,39 +533,107 @@ export default function PreparednessToolsScreen({ navigation }) {
     );
   };
 
-  const renderQuiz = () => (
-    <View style={styles.toolContent}>
-      <Text style={styles.toolDescription}>
-        Test your emergency preparedness knowledge:
-      </Text>
+  const renderQuiz = () => {
+    if (showResults) {
+      let correctAnswers = 0;
+      let totalXP = 0;
       
-      {quizQuestions.map((quiz, index) => (
-        <View key={index} style={styles.quizCard}>
-          <Text style={styles.questionNumber}>Question {index + 1}</Text>
-          <Text style={styles.questionText}>{quiz.question}</Text>
-          
-          {quiz.options.map((option, optionIndex) => (
-            <TouchableOpacity
-              key={optionIndex}
-              style={styles.quizOption}
-              onPress={() => console.log(`Selected: ${option}`)}
-            >
-              <View style={styles.optionCircle}>
-                <Text style={styles.optionLetter}>
-                  {String.fromCharCode(65 + optionIndex)}
-                </Text>
-              </View>
-              <Text style={styles.optionText}>{option}</Text>
+      quizQuestions.forEach((question, index) => {
+        if (selectedAnswers[index] === question.correct) {
+          correctAnswers++;
+          totalXP += question.xp;
+        }
+      });
+
+      return (
+        <View style={styles.toolContent}>
+          <View style={styles.quizResults}>
+            <Text style={styles.resultsTitle}>🎉 Quiz Results</Text>
+            <Text style={styles.resultsScore}>{correctAnswers}/{quizQuestions.length} Correct</Text>
+            <Text style={styles.resultsXP}>+{totalXP} XP Earned!</Text>
+            
+            <ScrollView style={styles.detailedResults}>
+              {quizQuestions.map((question, index) => (
+                <View key={index} style={styles.resultCard}>
+                  <Text style={styles.resultQuestion}>{question.question}</Text>
+                  <Text style={[
+                    styles.resultAnswer,
+                    selectedAnswers[index] === question.correct ? styles.correctAnswer : styles.wrongAnswer
+                  ]}>
+                    Your answer: {question.options[selectedAnswers[index] || 0]}
+                  </Text>
+                  {selectedAnswers[index] !== question.correct && (
+                    <Text style={styles.correctAnswerText}>
+                      Correct: {question.options[question.correct]}
+                    </Text>
+                  )}
+                  <Text style={styles.explanation}>{question.explanation}</Text>
+                </View>
+              ))}
+            </ScrollView>
+            
+            <TouchableOpacity style={styles.submitButton} onPress={resetQuiz}>
+              <Text style={styles.submitButtonText}>Try Again</Text>
             </TouchableOpacity>
-          ))}
+          </View>
         </View>
-      ))}
-      
-      <TouchableOpacity style={styles.submitButton}>
-        <Text style={styles.submitButtonText}>Submit Quiz</Text>
-      </TouchableOpacity>
-    </View>
-  );
+      );
+    }
+
+    return (
+      <View style={styles.toolContent}>
+        <Text style={styles.toolDescription}>
+          Test your emergency preparedness knowledge with SCDF-based questions:
+        </Text>
+        
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {quizQuestions.map((question, index) => (
+            <View key={index} style={styles.quizCard}>
+              <Text style={styles.questionNumber}>Question {index + 1} (+{question.xp} XP)</Text>
+              <Text style={styles.questionText}>{question.question}</Text>
+              
+              {question.options.map((option, optionIndex) => (
+                <TouchableOpacity
+                  key={optionIndex}
+                  style={[
+                    styles.quizOption,
+                    selectedAnswers[index] === optionIndex && styles.selectedOption
+                  ]}
+                  onPress={() => handleAnswerSelect(index, optionIndex)}
+                >
+                  <View style={[
+                    styles.optionCircle,
+                    selectedAnswers[index] === optionIndex && styles.selectedCircle
+                  ]}>
+                    <Text style={[
+                      styles.optionLetter,
+                      selectedAnswers[index] === optionIndex && styles.selectedLetter
+                    ]}>
+                      {String.fromCharCode(65 + optionIndex)}
+                    </Text>
+                  </View>
+                  <Text style={styles.optionText}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ))}
+          
+          <TouchableOpacity 
+            style={[
+              styles.submitButton, 
+              Object.keys(selectedAnswers).length < quizQuestions.length && styles.submitButtonDisabled
+            ]} 
+            onPress={submitQuiz}
+            disabled={Object.keys(selectedAnswers).length < quizQuestions.length}
+          >
+            <Text style={styles.submitButtonText}>
+              Submit Quiz ({Object.keys(selectedAnswers).length}/{quizQuestions.length})
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    );
+  };
 
   const renderContent = () => {
     switch (selectedTool) {
@@ -338,7 +649,6 @@ export default function PreparednessToolsScreen({ navigation }) {
       style={styles.container}
       showsVerticalScrollIndicator={false}
     >
-      {/* Header that scrolls with content - matching MenuScreen style */}
       <View style={styles.headerBackground}>
         <SafeAreaView style={styles.safeArea} edges={['top']}>
           <View style={styles.header}>
@@ -348,7 +658,6 @@ export default function PreparednessToolsScreen({ navigation }) {
         </SafeAreaView>
       </View>
       
-      {/* Tool Tabs */}
       <View style={styles.toolTabs}>
         {tools.map((tool) => (
           <TouchableOpacity
@@ -374,7 +683,6 @@ export default function PreparednessToolsScreen({ navigation }) {
 
       <View style={styles.bottomPadding} />
 
-      {/* Camera Modal */}
       <Modal
         visible={showCamera !== null}
         transparent={true}
@@ -396,7 +704,7 @@ export default function PreparednessToolsScreen({ navigation }) {
                 style={styles.confirmButton}
                 onPress={() => confirmCollection(showCamera)}
               >
-                <Text style={styles.confirmButtonText}>✓ I Have This Item!</Text>
+                <Text style={styles.confirmButtonText}>✓ I Have This Item! (+10 XP)</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.cancelButton}
@@ -418,7 +726,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   
-  // Header styling that matches MenuScreen
   headerBackground: {
     backgroundColor: colors.primary,
     borderBottomLeftRadius: 24,
@@ -426,9 +733,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   
-  safeArea: {
-    // SafeAreaView handles the notch padding
-  },
+  safeArea: {},
   
   header: {
     paddingHorizontal: 20,
@@ -493,7 +798,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // CHAT STYLES
+  // CHAT STYLES (same as before)
   chatContainer: {
     flex: 1,
     paddingHorizontal: 20,
@@ -739,6 +1044,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#f7fafc',
     borderRadius: 8,
     marginBottom: 8,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  selectedOption: {
+    backgroundColor: '#e6f3ff',
+    borderColor: colors.primary,
   },
   optionCircle: {
     width: 28,
@@ -749,10 +1060,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 12,
   },
+  selectedCircle: {
+    backgroundColor: colors.primary,
+  },
   optionLetter: {
     fontSize: 12,
     fontWeight: 'bold',
     color: '#4a5568',
+  },
+  selectedLetter: {
+    color: 'white',
   },
   optionText: {
     fontSize: 14,
@@ -767,10 +1084,80 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 40,
   },
+  submitButtonDisabled: {
+    backgroundColor: '#cbd5e0',
+  },
   submitButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+
+  // QUIZ RESULTS STYLES
+  quizResults: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+  },
+  resultsTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2d3748',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  resultsScore: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: colors.primary,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  resultsXP: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#10b981',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  detailedResults: {
+    maxHeight: 400,
+    marginBottom: 20,
+  },
+  resultCard: {
+    backgroundColor: '#f7fafc',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  resultQuestion: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#2d3748',
+    marginBottom: 8,
+  },
+  resultAnswer: {
+    fontSize: 13,
+    marginBottom: 4,
+  },
+  correctAnswer: {
+    color: '#10b981',
+  },
+  wrongAnswer: {
+    color: '#ef4444',
+  },
+  correctAnswerText: {
+    fontSize: 13,
+    color: '#10b981',
+    marginBottom: 4,
+    fontWeight: '600',
+  },
+  explanation: {
+    fontSize: 12,
+    color: '#4a5568',
+    fontStyle: 'italic',
+    marginTop: 4,
   },
 
   // CAMERA MODAL STYLES
@@ -843,5 +1230,5 @@ const styles = StyleSheet.create({
 
   bottomPadding: {
     height: 100,
-  },
+  },    
 });

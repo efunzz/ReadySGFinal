@@ -1,5 +1,5 @@
 // services/badgeService.js
-import { supabase } from '../lib/supabase'; // Use your existing supabase import path
+import { supabase } from '../lib/supabase'; 
 
 export const BadgeService = {
   // Get all badges with user progress
