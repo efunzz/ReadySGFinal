@@ -288,6 +288,7 @@ export default function LocalResourcesScreen({ navigation }) {
           <Text style={styles.emptyText}>No {selectedCategory} resources found nearby</Text>
         </View>
       )}
+      <View style={styles.bottomSpacer} />
     </ScrollView>
   );
 
@@ -355,13 +356,6 @@ export default function LocalResourcesScreen({ navigation }) {
         {/* Content Area - Now Takes More Space */}
         <View style={styles.contentArea}>
           {viewMode === 'map' ? renderMap() : renderList()}
-        </View>
-
-        {/* Emergency Footer */}
-        <View style={styles.emergencyFooter}>
-          <TouchableOpacity style={styles.emergencyButton}>
-            <Text style={styles.emergencyButtonText}>🚨 Report Emergency</Text>
-          </TouchableOpacity>
         </View>
       </View>
     </View>
@@ -464,7 +458,9 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.9)',
     textAlign: 'center',
   },
-  
+  bottomSpacer: {
+    height: 80,
+  },
   contentContainer: {
     flex: 1,
     paddingTop: 16,
@@ -576,6 +572,7 @@ const styles = StyleSheet.create({
   mapContainer: {
     flex: 1,
     margin: 16,
+    marginBottom:100,
     borderRadius: 16,
     overflow: 'hidden',
   },
@@ -612,6 +609,8 @@ const styles = StyleSheet.create({
   resourceList: {
     flex: 1,
     paddingHorizontal: 20,
+    paddingBottom: 100,
+    
   },
   
   loadingContainer: {
@@ -703,26 +702,5 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#a0aec0',
-  },
-  
-  // Emergency footer
-  emergencyFooter: {
-    padding: 16,
-    backgroundColor: 'white',
-    borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
-  },
-  
-  emergencyButton: {
-    backgroundColor: '#dc2626',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  
-  emergencyButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
 });
