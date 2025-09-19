@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { BadgeService } from '../../services/badgeService';
 import { supabase } from '../../lib/supabase';
 import { colors } from '../../constants/theme';
@@ -19,18 +20,20 @@ const BadgesScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
 
-  // Show only 3 key badges
+  // Show only 3 key badges - flood_expert first since it's the active one
   const keyBadgeIds = ['flood_expert', 'first_aider', 'knowledge_seeker'];
 
   useEffect(() => {
     getCurrentUser();
   }, []);
 
-  useEffect(() => {
-    if (currentUser) {
-      loadData();
-    }
-  }, [currentUser]);
+  useFocusEffect(
+    useCallback(() => {
+      if (currentUser) {
+        loadData();
+      }
+    }, [currentUser])
+  );
 
   const getCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -42,17 +45,26 @@ const BadgesScreen = ({ navigation }) => {
 
     try {
       setLoading(true);
-      const [allBadges, stats] = await Promise.all([
-        BadgeService.getUserBadges(currentUser.id),
-        BadgeService.getUserStats(currentUser.id)
-      ]);
+      console.log('🔄 Refreshing badges for user:', currentUser.id);
       
-      // Filter to show only key badges
-      const keyBadges = allBadges.filter(badge => keyBadgeIds.includes(badge.id));
+      const allBadges = await BadgeService.getUserBadges(currentUser.id);
+      
+      console.log('📊 All badges loaded:', allBadges);
+      
+      // Filter to show only key badges and sort with flood_expert first
+      const keyBadges = allBadges
+        .filter(badge => keyBadgeIds.includes(badge.id))
+        .sort((a, b) => {
+          // Put flood_expert first, then others in original order
+          if (a.id === 'flood_expert') return -1;
+          if (b.id === 'flood_expert') return 1;
+          return keyBadgeIds.indexOf(a.id) - keyBadgeIds.indexOf(b.id);
+        });
+      console.log('🎯 Key badges filtered and sorted:', keyBadges);
+      
       setBadges(keyBadges);
-      setUserStats(stats);
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('❌ Error loading data:', error);
     } finally {
       setLoading(false);
     }
@@ -66,37 +78,50 @@ const BadgesScreen = ({ navigation }) => {
     }
   };
 
-  const BadgeCard = ({ badge }) => (
-    <TouchableOpacity 
-      style={styles.badgeCard}
-      onPress={() => navigation.navigate('BadgeDetail', { badgeId: badge.id })}
-    >
-      <View style={styles.badgeIcon}>
-        <Text style={styles.badgeEmoji}>{badge.icon}</Text>
-      </View>
-      
-      <Text style={styles.badgeTitle}>{badge.title}</Text>
-      
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <View 
-            style={[
-              styles.progressFill, 
-              { 
-                width: `${(badge.progress / badge.maxProgress) * 100}%`,
-                backgroundColor: getStatusColor(badge.status)
-              }
-            ]} 
-          />
+  const BadgeCard = ({ badge }) => {
+    const progressPercentage = Math.round((badge.progress / badge.maxProgress) * 100);
+    
+    return (
+      <TouchableOpacity 
+        style={styles.badgeCard}
+        onPress={() => navigation.navigate('BadgeDetail', { badgeId: badge.id })}
+      >
+        <View style={styles.badgeIcon}>
+          <Text style={styles.badgeEmoji}>{badge.icon}</Text>
         </View>
-        <Text style={styles.progressText}>
-          {badge.progress}/{badge.maxProgress}
-        </Text>
-      </View>
-      
-      <Text style={styles.xpText}>+{badge.xpReward} XP</Text>
-    </TouchableOpacity>
-  );
+        
+        <Text style={styles.badgeTitle}>{badge.title}</Text>
+        
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <View 
+              style={[
+                styles.progressFill, 
+                { 
+                  width: `${progressPercentage}%`,
+                  backgroundColor: getStatusColor(badge.status)
+                }
+              ]} 
+            />
+          </View>
+          <Text style={styles.progressText}>
+            {badge.progress}/{badge.maxProgress} ({progressPercentage}%)
+          </Text>
+        </View>
+        
+        {/* Status indicator */}
+        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(badge.status) }]}>
+          <Text style={styles.statusText}>
+            {badge.status === 'completed' ? '✅ Complete' : 
+             badge.status === 'in_progress' ? '🔄 In Progress' : 
+             '🔒 Available'}
+          </Text>
+        </View>
+        
+        <Text style={styles.xpText}>+{badge.xpReward} XP</Text>
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
@@ -128,26 +153,19 @@ const BadgesScreen = ({ navigation }) => {
         contentContainerStyle={styles.badgesContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Stats */}
-        <View style={styles.statsCard}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{userStats?.total_xp || 0}</Text>
-            <Text style={styles.statLabel}>Total XP</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{userStats?.badges_earned || 0}</Text>
-            <Text style={styles.statLabel}>Badges Earned</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{userStats?.courses_completed || 0}</Text>
-            <Text style={styles.statLabel}>Completed</Text>
-          </View>
-        </View>
+
 
         {/* Badge Cards */}
-        {badges.map((badge) => (
-          <BadgeCard key={badge.id} badge={badge} />
-        ))}
+        {badges.length > 0 ? (
+          badges.map((badge) => (
+            <BadgeCard key={badge.id} badge={badge} />
+          ))
+        ) : (
+          <View style={styles.noBadgesContainer}>
+            <Text style={styles.noBadgesText}>No badges available yet</Text>
+            <Text style={styles.noBadgesSubtext}>Complete learning modules to earn badges!</Text>
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -191,35 +209,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     color: colors.text?.secondary || '#6b7280',
-  },
-  statsCard: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    marginHorizontal: 20,
-    marginTop: 20,
-    marginBottom: 8,
-    padding: 20,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.primary,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: colors.text?.secondary || '#6b7280',
-    marginTop: 4,
-    textAlign: 'center',
   },
   badgesScrollView: {
     flex: 1,
@@ -280,10 +269,36 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
   },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'white',
+  },
   xpText: {
     fontSize: 14,
     fontWeight: 'bold',
     color: colors.primary,
+  },
+  noBadgesContainer: {
+    alignItems: 'center',
+    paddingTop: 60,
+  },
+  noBadgesText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text?.secondary || '#6b7280',
+    marginBottom: 8,
+  },
+  noBadgesSubtext: {
+    fontSize: 14,
+    color: colors.text?.secondary || '#6b7280',
+    textAlign: 'center',
   },
 });
 

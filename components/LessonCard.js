@@ -8,7 +8,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/theme';
 
-const LessonCard = ({ lesson, onPress, getDifficultyColor }) => {
+const LessonCard = ({ lesson, onPress }) => {
   return (
     <TouchableOpacity 
       style={styles.lessonCard}
@@ -25,16 +25,18 @@ const LessonCard = ({ lesson, onPress, getDifficultyColor }) => {
         
         <View style={styles.lessonMeta}>
           <View style={styles.metaItem}>
-            <Ionicons name="time-outline" size={14} color={colors.text?.secondary || '#6b7280'} />
-            <Text style={styles.metaText}>{lesson.duration}</Text>
-          </View>
-          <View style={styles.metaItem}>
             <Ionicons name="play-outline" size={14} color={colors.text?.secondary || '#6b7280'} />
             <Text style={styles.metaText}>{lesson.scenarios} scenarios</Text>
           </View>
-          <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(lesson.difficulty) + '20' }]}>
-            <Text style={[styles.difficultyText, { color: getDifficultyColor(lesson.difficulty) }]}>
-              {lesson.difficulty}
+          <View style={[
+            styles.statusBadge, 
+            { backgroundColor: lesson.completed ? (colors.success || '#10b981') + '20' : '#f3f4f6' }
+          ]}>
+            <Text style={[
+              styles.statusText, 
+              { color: lesson.completed ? (colors.success || '#10b981') : colors.text?.secondary || '#6b7280' }
+            ]}>
+              {lesson.completed ? 'Complete' : 'Incomplete'}
             </Text>
           </View>
         </View>
@@ -109,13 +111,12 @@ const styles = StyleSheet.create({
   lessonMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
 
   metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 12,
   },
 
   metaText: {
@@ -124,14 +125,13 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
 
-  difficultyBadge: {
+  statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
-    marginLeft: 'auto',
   },
 
-  difficultyText: {
+  statusText: {
     fontSize: 11,
     fontWeight: '600',
   },

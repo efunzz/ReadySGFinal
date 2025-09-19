@@ -8,16 +8,15 @@ import { Audio } from 'expo-av';
 import { BadgeService } from '../services/badgeService';
 import { supabase } from '../lib/supabase';
 
-
-
 const { width, height } = Dimensions.get('window');
 
 export default function FlashFloodSimulator({ navigation, route }) {
   const { scenario } = route.params;
   const [currentStep, setCurrentStep] = useState(0);
   const [score, setScore] = useState(0);
+  const [correctAnswers, setCorrectAnswers] = useState(0); 
   const [lives, setLives] = useState(3);
-  const [gamePhase, setGamePhase] = useState('scene'); // 'scene', 'question', 'feedback'
+  const [gamePhase, setGamePhase] = useState('scene'); 
   const [feedbackText, setFeedbackText] = useState('');
   const [isCorrect, setIsCorrect] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(1));
@@ -197,10 +196,8 @@ export default function FlashFloodSimulator({ navigation, route }) {
     };
   }, []);
   
-
   const loadSounds = async () => {
     try {
-      // You'll need to add these sound files to your assets folder
       const buttonPressSound = await Audio.Sound.createAsync(
         require('../assets/sounds/button-press.mp3')
       );
@@ -243,13 +240,8 @@ export default function FlashFloodSimulator({ navigation, route }) {
     setGamePhase('question');
   };
 
-  const [isAdvancing, setIsAdvancing] = useState(false);
-
   const handleChoice = (choice) => {
-    if (isAdvancing) return; // Prevent double-taps
-    
-    console.log('handleChoice called, current step:', currentStep);
-    setIsAdvancing(true);
+    console.log('handleChoice called, current step:', currentStep, 'choice correct:', choice.correct);
     
     // Choice selection feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -261,6 +253,11 @@ export default function FlashFloodSimulator({ navigation, route }) {
 
     if (choice.correct) {
       setScore(prev => prev + 10);
+      setCorrectAnswers(prev => {
+        const newCount = prev + 1;
+        console.log('Correct answers now:', newCount);
+        return newCount;
+      });
       // Success haptic and sound
       setTimeout(() => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -274,70 +271,61 @@ export default function FlashFloodSimulator({ navigation, route }) {
         playSound('incorrect');
       }, 200);
     }
+  };
 
-    // Auto-advance after feedback
-    setTimeout(() => {
-      console.log('Auto-advance triggered, advancing from step:', currentStep);
-      if (currentStep < currentScenario.steps.length - 1) {
-        setCurrentStep(prev => {
-          const nextStep = prev + 1;
-          console.log('Setting step to:', nextStep);
-          return nextStep;
-        });
-      } else {
-        showFinalResults();
-      }
-      setIsAdvancing(false); // Re-enable after advancement
-    }, 3000);
+  const handleContinueAfterFeedback = () => {
+    if (currentStep < currentScenario.steps.length - 1) {
+      setCurrentStep(prev => {
+        const nextStep = prev + 1;
+        console.log('Moving to step:', nextStep);
+        return nextStep;
+      });
+    } else {
+      showFinalResults();
+    }
   };
 
   const showFinalResults = async () => {
     const totalSteps = currentScenario.steps.length;
-    const percentage = Math.round((score / (totalSteps * 10)) * 100);
+    console.log('Final Results - Total steps:', totalSteps, 'Correct answers:', correctAnswers, 'Score:', score);
+    
+    const percentage = Math.round((correctAnswers / totalSteps) * 100);
     
     let resultMessage = '';
     if (percentage >= 80) {
-      resultMessage = 'Excellent! You\'re well-prepared for emergencies!';
+      resultMessage = '🏆 Excellent! You\'re well-prepared for emergencies!';
     } else if (percentage >= 60) {
-      resultMessage = 'Good job! Review the areas you missed.';
+      resultMessage = '👍 Good job! Review the areas you missed.';
     } else {
-      resultMessage = 'Keep learning! Practice makes perfect.';
+      resultMessage = '📚 Keep learning! Practice makes perfect.';
     }
   
-    //Add badge completion tracking
-    let badgeMessage = '';
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (user) {
-        // Complete the flash flood module - this triggers badge updates!
-        const result = await BadgeService.completeModule(
-          user.id, 
-          'flash_flood_simulator', 
-          percentage // Use the percentage as score
-        );
-  
-        badgeMessage = `\n\n🎉 You earned ${result.xpEarned} XP!\nCheck your badges for progress!`;
+        // Map scenario to module key
+        const moduleKeys = {
+          'before': 'flash_flood_before',
+          'during': 'flash_flood_during', 
+          'after': 'flash_flood_after'
+        };
+        
+        const moduleKey = moduleKeys[scenario];
+        if (moduleKey) {
+          console.log('🎯 Completing module:', moduleKey, 'with score:', percentage);
+          await BadgeService.completeModule(user.id, moduleKey, percentage);
+          console.log('✅ Module completed successfully!');
+        }
       }
     } catch (error) {
-      console.error('Badge completion error:', error);
-      // Don't show error to user, just log it
+      console.error('❌ Error updating progress:', error);
+      // Don't show error to user - just log it
     }
   
     Alert.alert(
       'Mission Complete!',
-      `${resultMessage}\n\nScore: ${score}/${totalSteps * 10}\nAccuracy: ${percentage}%${badgeMessage}`,
+      `${resultMessage}\n\nCorrect Answers: ${correctAnswers}/${totalSteps}\nAccuracy: ${percentage}%\nTotal Points: ${score}`,
       [
-        { 
-          text: 'View Badges', 
-          onPress: () => {
-            navigation.goBack(); // Go back to menu first
-            setTimeout(() => {
-              // Navigate to badges tab after a short delay
-              navigation.navigate('Badges');
-            }, 100);
-          }
-        },
         { text: 'Try Again', onPress: () => restartSimulator() },
         { text: 'Back to Menu', onPress: () => navigation.goBack() }
       ]
@@ -347,6 +335,7 @@ export default function FlashFloodSimulator({ navigation, route }) {
   const restartSimulator = () => {
     setCurrentStep(0);
     setScore(0);
+    setCorrectAnswers(0);
     setLives(3);
     setGamePhase('scene');
   };
@@ -407,25 +396,21 @@ export default function FlashFloodSimulator({ navigation, route }) {
               {isCorrect ? '+10 points' : 'No points'}
             </Text>
           </View>
-          <View style={styles.autoAdvanceIndicator}>
-            <Text style={styles.autoAdvanceText}>Auto-advancing in 3 seconds...</Text>
-            <TouchableOpacity 
-              style={styles.skipButton}
-              onPress={() => {
-                if (currentStep < currentScenario.steps.length - 1) {
-                  setCurrentStep(prev => prev + 1);
-                } else {
-                  showFinalResults();
-                }
-              }}
-            >
-              <Text style={styles.skipButtonText}>Skip →</Text>
-            </TouchableOpacity>
-          </View>
+          
+          {/* Manual continue button */}
+          <TouchableOpacity 
+            style={styles.continueButton}
+            onPress={handleContinueAfterFeedback}
+          >
+            <Text style={styles.continueButtonText}>
+              {currentStep < currentScenario.steps.length - 1 ? 'Continue →' : 'See Results →'}
+            </Text>
+          </TouchableOpacity>
         </View>
       );
     }
   };
+
   const renderTestButton = () => {
     // Only show in development/testing
     if (__DEV__) {
@@ -462,6 +447,9 @@ export default function FlashFloodSimulator({ navigation, route }) {
     return null;
   };
 
+  // Calculate progress percentage for progress bar
+  const progressPercentage = ((currentStep + 1) / currentScenario.steps.length) * 100;
+
   return (
     <View style={styles.container}>
       {/* Full-screen pixel art background */}
@@ -486,15 +474,20 @@ export default function FlashFloodSimulator({ navigation, route }) {
           </View>
         </View>
 
-        {/* Progress indicator */}
+        {/* Progress indicator with progress bar */}
         <View style={styles.progressIndicator}>
           <Text style={styles.progressText}>
             {currentStep + 1} / {currentScenario.steps.length}
           </Text>
           <Text style={styles.scenarioTitle}>{currentScenario.title}</Text>
+          
+          {/* Progress bar */}
+          <View style={styles.progressBarContainer}>
+            <View style={[styles.progressBarFill, { width: `${progressPercentage}%` }]} />
+          </View>
         </View>
 
-        {/* Game content overlay - directly rendered, not in contentOverlay */}
+        {/* Game content overlay */}
         {renderGameContent()}
         {renderTestButton()}
       </ImageBackground>
@@ -589,13 +582,19 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     overflow: 'hidden',
+    marginBottom: 12,
   },
-  contentOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
+  progressBarContainer: {
+    width: '100%',
+    height: 8,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#10b981',
+    borderRadius: 4,
   },
   
   // Scene Phase Styles
@@ -736,6 +735,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
+    marginBottom: 30,
   },
   feedbackIcon: {
     fontSize: 60,
@@ -757,27 +757,37 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.text.primary,
   },
-  autoAdvanceIndicator: {
-    marginTop: 20,
+  continueButton: {
+    backgroundColor: 'rgba(255,107,107,0.9)',
+    paddingHorizontal: 40,
+    paddingVertical: 16,
+    borderRadius: 25,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
     alignItems: 'center',
-    gap: 10,
-  },
-  autoAdvanceText: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 14,
-    fontStyle: 'italic',
-  },
-  skipButton: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 15,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.3)',
   },
-  skipButtonText: {
+  continueButtonText: {
     color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  testBadgeButton: {
+    position: 'absolute',
+    bottom: 100,
+    right: 20,
+    backgroundColor: 'rgba(128, 0, 128, 0.8)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 15,
+  },
+  testBadgeButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });

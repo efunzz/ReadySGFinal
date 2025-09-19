@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
@@ -6,22 +6,50 @@ import * as Location from 'expo-location';
 import { colors } from '../constants/theme';
 import { weatherService } from '../services/weatherService';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import { BadgeService } from '../services/badgeService';
 
 export default function HomeScreen({ navigation }) {
   const [userName, setUserName] = useState('Guest');
   const [userLocation, setUserLocation] = useState('Singapore');
   const [loading, setLoading] = useState(true);
+  const [recentBadges, setRecentBadges] = useState([]);
   
   const [weatherData, setWeatherData] = useState(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-
 
   useEffect(() => {
     fetchUserData();
     getCurrentLocation();
     loadWeatherData();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadBadgeData();
+    }, [])
+  );
+
+  const loadBadgeData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        console.log('🔄 Loading badges for HomeScreen...');
+        
+        const badges = await BadgeService.getUserBadges(user.id);
+        
+        const completedBadges = badges.filter(badge => 
+          badge.status === 'completed' || badge.status === 'in_progress'
+        );
+        
+        console.log('🎯 HomeScreen badges:', completedBadges);
+        setRecentBadges(completedBadges.slice(0, 3));
+      }
+    } catch (error) {
+      console.error('❌ Error loading badges:', error);
+    }
+  };
 
   const fetchUserData = async () => {
     try {
@@ -126,6 +154,7 @@ export default function HomeScreen({ navigation }) {
       setRefreshing(true);
       weatherService.clearCache();
       await loadWeatherData();
+      await loadBadgeData(); 
     } catch (error) {
       console.error('❌ Refresh failed:', error);
     } finally {
@@ -173,20 +202,44 @@ export default function HomeScreen({ navigation }) {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* My Badges Section */}
+        {/* My Badges Section with actual badge coins */}
         <View style={styles.section}>
           <TouchableOpacity 
             style={styles.sectionHeader}
-            onPress={() => navigation.navigate('Badges')} // Navigate to Badges Stack
+            onPress={() => navigation.navigate('Badges')}
           >
             <Text style={styles.sectionTitle}>My Badges</Text>
             <Ionicons name="chevron-forward" size={20} color="#718096" />
           </TouchableOpacity>
-          <View style={styles.badgesContainer}>
-            <Text style={styles.badgesPlaceholder}>Tap to view all badges</Text>
-            <Text style={styles.badgesSubtext}>Complete learning modules to earn badges</Text>
+          
+          <View style={styles.badgeCoinsContainer}>
+            {/* Show earned badges first */}
+            {recentBadges.map((badge) => (
+              <TouchableOpacity 
+                key={badge.id}
+                style={[
+                  styles.badgeCoin,
+                  { 
+                    backgroundColor: badge.status === 'completed' 
+                      ? colors.primary + '20' 
+                      : colors.primary + '10'
+                  }
+                ]}
+                onPress={() => navigation.navigate('Badges')}
+              >
+                <Text style={styles.badgeCoinEmoji}>{badge.icon}</Text>
+              </TouchableOpacity>
+            ))}
+            
+            {/* Show placeholder coins for badges not earned yet */}
+            {Array.from({ length: Math.max(0, 3 - recentBadges.length) }).map((_, index) => (
+              <View key={`placeholder-${index}`} style={styles.badgeCoinPlaceholder}>
+                <Text style={styles.badgeCoinPlaceholderText}>?</Text>
+              </View>
+            ))}
           </View>
         </View>
+
         {/* Quick Actions Grid */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -389,6 +442,59 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  
+  // Badge coins styles
+  badgeCoinsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 20,
+    gap: 16,
+  },
+  
+  badgeCoin: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  
+  badgeCoinEmoji: {
+    fontSize: 28,
+  },
+  
+  badgeCoinPlaceholder: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    borderStyle: 'dashed',
+  },
+  
+  badgeCoinPlaceholderText: {
+    fontSize: 24,
+    color: '#9ca3af',
+    fontWeight: 'bold',
+  },
+  
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -449,13 +555,6 @@ const styles = StyleSheet.create({
   environmentalAlerts: {
     paddingHorizontal: 20,
     marginBottom: 24,
-  },
-  
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
   },
   
   loadingIndicator: {
@@ -548,29 +647,4 @@ const styles = StyleSheet.create({
   bottomPadding: {
     height: 100,
   },
-  // Add these to your styles object
-badgesContainer: {
-  backgroundColor: colors.white,
-  borderRadius: 16,
-  padding: 32,
-  alignItems: 'center',
-  justifyContent: 'center',
-  borderWidth: 2,
-  borderColor: '#e2e8f0',
-  borderStyle: 'dashed',
-  minHeight: 120,
-},
-
-badgesPlaceholder: {
-  fontSize: 18,
-  fontWeight: '600',
-  color: colors.text.secondary,
-  marginBottom: 8,
-},
-
-badgesSubtext: {
-  fontSize: 14,
-  color: colors.text.light,
-  textAlign: 'center',
-},
 });

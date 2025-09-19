@@ -1,10 +1,18 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius, fontSize } from '../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+
+import { BadgeService } from '../services/badgeService'; 
+import { supabase } from '../lib/supabase'; 
 
 export default function MenuScreen({ navigation }) {
+  const [courseProgress, setCourseProgress] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [recentBadges, setRecentBadges] = useState([]);
+  
   const handleCardPress = (cardTitle) => {
     const scenarioMap = {
       'Flash Floods': 'FlashFloodLessons', 
@@ -18,8 +26,52 @@ export default function MenuScreen({ navigation }) {
     if (destination === 'FlashFloodLessons') {
       navigation.navigate('FlashFloodLessons');
     } else {
-      // For future courses that don't exist yet
       Alert.alert('Coming Soon', `${cardTitle} lessons will be available soon!`);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadCourseProgress();
+    }, [])
+  );
+
+  const loadCourseProgress = async () => {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        console.log('🔄 Refreshing course progress for user:', user.id);
+        
+        // Get badges data
+        const badges = await BadgeService.getUserBadges(user.id);
+        console.log('📊 All badges loaded:', badges);
+        
+        // Find flood expert badge for progress
+        const floodExpertBadge = badges.find(b => b.id === 'flood_expert');
+        console.log('📊 Flood Expert Badge:', floodExpertBadge);
+        
+        if (floodExpertBadge) {
+          const newProgress = Math.round((floodExpertBadge.progress / floodExpertBadge.maxProgress) * 100);
+          console.log(`✅ Setting progress: ${floodExpertBadge.progress}/${floodExpertBadge.maxProgress} = ${newProgress}%`);
+          setCourseProgress(newProgress);
+        } else {
+          console.log('❌ No flood expert badge found');
+          setCourseProgress(0);
+        }
+
+        // Get recent completed or in-progress badges (limit to 3 for preview)
+        const completedBadges = badges.filter(badge => 
+          badge.status === 'completed' || badge.status === 'in_progress'
+        );
+        console.log('🎯 Completed/In-progress badges:', completedBadges);
+        
+        setRecentBadges(completedBadges.slice(0, 3));
+      }
+    } catch (error) {
+      console.error('❌ Error loading course progress:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -40,58 +92,97 @@ export default function MenuScreen({ navigation }) {
       
       {/* My Badges Section */}
       <View style={styles.section}>
-          <TouchableOpacity 
-            style={styles.sectionHeader}
-            onPress={() => navigation.navigate('Badges')} // Navigate to Badges Stack
-          >
-            <Text style={styles.sectionTitle}>My Badges</Text>
-            <Ionicons name="chevron-forward" size={20} color="#718096" />
-          </TouchableOpacity>
-          <View style={styles.badgesContainer}>
-            <Text style={styles.badgesPlaceholder}>Tap to view all badges</Text>
-            <Text style={styles.badgesSubtext}>Complete learning modules to earn badges</Text>
-          </View>
+        <TouchableOpacity 
+          style={styles.sectionHeader}
+          onPress={() => navigation.navigate('Badges')}
+        >
+          <Text style={styles.sectionTitle}>My Badges</Text>
+          <Ionicons name="chevron-forward" size={20} color="#718096" />
+        </TouchableOpacity>
+        
+        <View style={styles.badgeCoinsContainer}>
+          {/* Show earned badges first */}
+          {recentBadges.map((badge) => (
+            <TouchableOpacity 
+              key={badge.id}
+              style={[
+                styles.badgeCoin,
+                { 
+                  backgroundColor: badge.status === 'completed' 
+                    ? colors.primary + '20' 
+                    : colors.primary + '10'
+                }
+              ]}
+              onPress={() => navigation.navigate('Badges')}
+            >
+              <Text style={styles.badgeCoinEmoji}>{badge.icon}</Text>
+            </TouchableOpacity>
+          ))}
+          
+          {/* Show placeholder coins for badges not earned yet */}
+          {Array.from({ length: Math.max(0, 3 - recentBadges.length) }).map((_, index) => (
+            <View key={`placeholder-${index}`} style={styles.badgeCoinPlaceholder}>
+              <Text style={styles.badgeCoinPlaceholderText}>?</Text>
+            </View>
+          ))}
         </View>
+      </View>
 
       {/* Emergency Training Courses */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Emergency Training Courses</Text>
         
-        {/* Flash Floods - Available */}
-        <View style={styles.courseCard}>
+        {/* Flash Floods - Available with real-time progress */}
+        <TouchableOpacity 
+          style={styles.courseCard}
+          onPress={() => handleCardPress('Flash Floods')}
+          activeOpacity={0.8}
+        >
           <View style={styles.courseHeader}>
             <View style={styles.imagePlaceholder}>
               <Text style={styles.placeholderText}>🌊</Text>
             </View>
             <View style={styles.courseTitleSection}>
               <Text style={styles.courseTitle}>Flash Floods</Text>
-              <Text style={styles.courseLevel}>🎮 Available</Text>
+              <Text style={[styles.courseLevel, courseProgress > 0 && styles.activeCourseLevel]}>
+                {courseProgress > 0 ? `${courseProgress}% Complete` : '🎮 Available'}
+              </Text>
             </View>
           </View>
           
           <Text style={styles.courseDescription}>
-            Master flash flood preparedness and response protocols.
+            Master flash flood preparedness through interactive scenarios covering preparation, response, and recovery phases.
           </Text>
           
-          {/* Progress Bar */}
+          {/* Progress Bar - Updates immediately */}
           <View style={styles.progressSection}>
             <View style={styles.progressInfo}>
               <Text style={styles.progressText}>Progress</Text>
-              <Text style={styles.progressPercent}>0%</Text>
+              <Text style={styles.progressPercent}>{courseProgress}%</Text>
             </View>
             <View style={styles.progressBarContainer}>
-              <View style={[styles.progressBar, { width: '0%' }]} />
+              <View style={[
+                styles.progressBar, 
+                { 
+                  width: `${courseProgress}%`,
+                  backgroundColor: courseProgress === 100 ? '#10b981' : '#4caf50'
+                }
+              ]} />
             </View>
           </View>
           
           <TouchableOpacity 
-            style={styles.startButton}
+            style={[
+              styles.startButton,
+              courseProgress === 100 && styles.completedButton
+            ]}
             onPress={() => handleCardPress('Flash Floods')}
-            activeOpacity={0.8}
           >
-            <Text style={styles.startButtonText}>Start Course</Text>
+            <Text style={styles.startButtonText}>
+              {courseProgress === 100 ? '🏆 Review Course' : courseProgress > 0 ? '▶️ Continue' : '🚀 Start Course'}
+            </Text>
           </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
 
         {/* Fire Safety - Planned */}
         <View style={[styles.courseCard, styles.plannedCard]}>
@@ -109,7 +200,6 @@ export default function MenuScreen({ navigation }) {
             Fire prevention and emergency response protocols.
           </Text>
           
-          {/* Progress Bar */}
           <View style={styles.progressSection}>
             <View style={styles.progressInfo}>
               <Text style={styles.progressText}>Progress</Text>
@@ -144,7 +234,6 @@ export default function MenuScreen({ navigation }) {
             CPR, AED usage, and emergency medical procedures.
           </Text>
           
-          {/* Progress Bar */}
           <View style={styles.progressSection}>
             <View style={styles.progressInfo}>
               <Text style={styles.progressText}>Progress</Text>
@@ -179,7 +268,6 @@ export default function MenuScreen({ navigation }) {
             Earthquakes, tsunamis, and natural disaster protocols.
           </Text>
           
-          {/* Progress Bar */}
           <View style={styles.progressSection}>
             <View style={styles.progressInfo}>
               <Text style={styles.progressText}>Progress</Text>
@@ -210,7 +298,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   
-  // Header styling that scrolls
   headerBackground: {
     backgroundColor: colors.primary,
     borderBottomLeftRadius: 24,
@@ -251,32 +338,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     marginBottom: 16,
   },
-
-  // Badges section
-  badgesContainer: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
-    borderStyle: 'dashed',
-    minHeight: 120,
-  },
-
-  badgesPlaceholder: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text.secondary,
-    marginBottom: 8,
-  },
-
-  badgesSubtext: {
-    fontSize: 14,
-    color: colors.text.light,
-    textAlign: 'center',
-  },
+  
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -284,7 +346,51 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   
-  // Course cards
+  badgeCoinsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 20,
+    gap: 16,
+  },
+  
+  badgeCoin: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  
+  badgeCoinEmoji: {
+    fontSize: 28,
+  },
+  
+  badgeCoinPlaceholder: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    borderStyle: 'dashed',
+  },
+  
+  badgeCoinPlaceholderText: {
+    fontSize: 24,
+    color: '#9ca3af',
+    fontWeight: 'bold',
+  },
+  
   courseCard: {
     backgroundColor: colors.white,
     borderRadius: 16,
@@ -301,7 +407,7 @@ const styles = StyleSheet.create({
   
   plannedCard: {
     opacity: 0.85,
-    borderLeftColor: colors.secondary,
+    borderLeftColor: colors.secondary || '#6b7280',
   },
   
   courseHeader: {
@@ -310,7 +416,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   
-  // Image placeholder
   imagePlaceholder: {
     width: 60,
     height: 60,
@@ -341,13 +446,18 @@ const styles = StyleSheet.create({
   
   courseLevel: {
     fontSize: 12,
-    color: colors.primary,
-    backgroundColor: colors.primaryLight,
+    color: '#6b7280',
+    backgroundColor: '#f3f4f6',
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
     fontWeight: '600',
+  },
+  
+  activeCourseLevel: {
+    color: colors.primary,
+    backgroundColor: colors.primaryLight || colors.primary + '20',
   },
   
   courseDescription: {
@@ -357,7 +467,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   
-  // Progress section
   progressSection: {
     marginBottom: 16,
   },
@@ -394,13 +503,16 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   
-  // Start button
   startButton: {
     backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 24,
     alignItems: 'center',
+  },
+  
+  completedButton: {
+    backgroundColor: '#10b981', 
   },
   
   startButtonText: {
