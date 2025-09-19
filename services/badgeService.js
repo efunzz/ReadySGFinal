@@ -335,6 +335,82 @@ export const BadgeService = {
     }
   },
 
+  async refreshBadgeProgress(userId) {
+    try {
+      console.log('🔄 REFRESHING: Badge progress for user:', userId);
+
+      // Get all badges for this user
+      const { data: userBadges, error: badgesError } = await supabase
+        .from('user_badges')
+        .select(`
+          id,
+          progress,
+          badges (
+            badge_key,
+            requirements,
+            max_progress
+          )
+        `)
+        .eq('user_id', userId);
+
+      if (badgesError) throw badgesError;
+
+      // Update each badge individually
+      for (const userBadge of userBadges) {
+        const requirements = userBadge.badges.requirements;
+        let newProgress = 0;
+
+        // Handle different requirement types
+        if (requirements.modules) {
+          // Count completed modules from the requirements list
+          const { data: completedModules } = await supabase
+            .from('user_learning_progress')
+            .select('learning_modules!inner(module_key)')
+            .eq('user_id', userId)
+            .eq('status', 'completed')
+            .in('learning_modules.module_key', requirements.modules);
+
+          newProgress = completedModules?.length || 0;
+          console.log(`🔄 Badge ${userBadge.badges.badge_key}: ${newProgress}/${requirements.modules.length} modules completed`);
+        }
+        
+        if (requirements.module_count) {
+          // Count total completed modules
+          const { data: totalCompleted } = await supabase
+            .from('user_learning_progress')
+            .select('id', { count: 'exact' })
+            .eq('user_id', userId)
+            .eq('status', 'completed');
+
+          newProgress = totalCompleted?.length || 0;
+          console.log(`🔄 Badge ${userBadge.badges.badge_key}: ${newProgress} total modules completed`);
+        }
+
+        // Update badge progress if changed
+        if (newProgress !== userBadge.progress) {
+          const newStatus = newProgress >= userBadge.badges.max_progress ? 'completed' : 
+                           newProgress > 0 ? 'in_progress' : 'available';
+
+          await supabase
+            .from('user_badges')
+            .update({
+              progress: newProgress,
+              status: newStatus,
+              completed_at: newStatus === 'completed' ? new Date().toISOString() : null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', userBadge.id);
+
+          console.log(`✅ Updated badge ${userBadge.badges.badge_key}: ${userBadge.progress} → ${newProgress} (${newStatus})`);
+        }
+      }
+
+      console.log('✅ Badge refresh complete');
+    } catch (error) {
+      console.error('❌ Error refreshing badge progress:', error);
+    }
+  },
+
   // Get recent badge achievements
   async getRecentAchievements(userId, limit = 5) {
     try {

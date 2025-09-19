@@ -287,23 +287,20 @@ export default function FlashFloodSimulator({ navigation, route }) {
 
   const showFinalResults = async () => {
     const totalSteps = currentScenario.steps.length;
-    console.log('Final Results - Total steps:', totalSteps, 'Correct answers:', correctAnswers, 'Score:', score);
-    
     const percentage = Math.round((correctAnswers / totalSteps) * 100);
     
     let resultMessage = '';
     if (percentage >= 80) {
-      resultMessage = '🏆 Excellent! You\'re well-prepared for emergencies!';
+      resultMessage = 'Excellent! You are well-prepared for emergencies!';
     } else if (percentage >= 60) {
-      resultMessage = '👍 Good job! Review the areas you missed.';
+      resultMessage = 'Good job! Review the areas you missed.';
     } else {
-      resultMessage = '📚 Keep learning! Practice makes perfect.';
+      resultMessage = 'Keep learning! Practice makes perfect.';
     }
   
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Map scenario to module key
         const moduleKeys = {
           'before': 'flash_flood_before',
           'during': 'flash_flood_during', 
@@ -312,14 +309,17 @@ export default function FlashFloodSimulator({ navigation, route }) {
         
         const moduleKey = moduleKeys[scenario];
         if (moduleKey) {
-          console.log('🎯 Completing module:', moduleKey, 'with score:', percentage);
+          console.log('Completing module:', moduleKey, 'with score:', percentage);
           await BadgeService.completeModule(user.id, moduleKey, percentage);
-          console.log('✅ Module completed successfully!');
+          
+          // ADD THIS: Force badge refresh after completion
+          console.log('Forcing badge refresh...');
+          await BadgeService.refreshBadgeProgress(user.id);
+          console.log('Badge refresh complete!');
         }
       }
     } catch (error) {
-      console.error('❌ Error updating progress:', error);
-      // Don't show error to user - just log it
+      console.error('Error updating progress:', error);
     }
   
     Alert.alert(
