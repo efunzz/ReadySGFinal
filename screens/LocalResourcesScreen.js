@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
   // Compact Categories
   categoryContainer: {
     paddingHorizontal: 40,
-    marginBottom: -390,
+    marginBottom: -450,
   },
   
   categoryTab: {
