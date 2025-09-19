@@ -231,8 +231,9 @@ export default function HomeScreen({ navigation }) {
           <TouchableOpacity 
             style={styles.sectionHeader}
             onPress={() => {
-              navigation.navigate('Menu'); 
-              navigation.navigate('Badges'); 
+              navigation.navigate('Menu', {
+                screen: 'Badges'
+              });
             }}
           >
             <Text style={styles.sectionTitle}>My Badges</Text>
