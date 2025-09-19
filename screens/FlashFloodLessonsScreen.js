@@ -9,7 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/theme';
-import LessonCard from '../components/LessonCard'; // Import the reusable component
+import LessonCard from '../components/LessonCard'; 
 
 const FlashFloodLessonsScreen = ({ navigation }) => {
   const lessons = [
