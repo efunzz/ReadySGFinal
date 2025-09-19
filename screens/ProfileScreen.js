@@ -1,15 +1,15 @@
-{/*seems complicated need to understand the code and how to use it in the app*/}
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
 import { colors } from '../constants/theme';
 import { supabase } from '../lib/supabase';
+import * as Location from 'expo-location';
 
 export default function ProfileScreen({ navigation, session }) {
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState('');
   const [website, setWebsite] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState('');
   const [fullName, setFullName] = useState('');
+  const [userLocation, setUserLocation] = useState('Singapore');
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   
   // Temporary state for editing
@@ -17,25 +17,8 @@ export default function ProfileScreen({ navigation, session }) {
   const [editWebsite, setEditWebsite] = useState('');
   const [editFullName, setEditFullName] = useState('');
 
-  // Static data that would eventually come from your database
-  const userStats = {
-    missionsCompleted: 8,
-    quizScore: 92,
-    daysActive: 15,
-    totalAchievements: 6
-  };
-
-  const achievements = [
-    { name: 'First Responder', icon: '🚑', description: 'Completed first aid mission' },
-    { name: 'Storm Survivor', icon: '⛈️', description: 'Mastered weather emergency prep' },
-    { name: 'Quiz Master', icon: '🧠', description: 'Scored 90%+ on safety quiz' },
-    { name: 'Preparedness Pro', icon: '🎯', description: 'Built complete emergency kit' },
-    { name: 'Community Helper', icon: '🤝', description: 'Shared resources with others' },
-    { name: 'Early Bird', icon: '🌅', description: 'Completed morning safety check' },
-  ];
-
   const profileMenuItems = [
-    { title: 'Personal Information', icon: '👤', subtitle: 'Update your details', action: () => setIsEditModalVisible(true) },
+    { title: 'Personal Information', icon: '👤', subtitle: 'Update your details', action: () => openEditModal() },
     { title: 'Emergency Contacts', icon: '📞', subtitle: 'Manage your contacts' },
     { title: 'Notification Settings', icon: '🔔', subtitle: 'Alert preferences' },
     { title: 'Location Settings', icon: '📍', subtitle: 'Your area preferences' },
@@ -48,22 +31,52 @@ export default function ProfileScreen({ navigation, session }) {
     console.log('useEffect triggered, session:', session?.user?.id);
     if (session?.user) {
       getProfile();
+      getCurrentLocation();
     } else {
       console.log('No session found, setting loading to false');
       setLoading(false);
     }
-
-    // Fallback timeout - if still loading after 10 seconds, stop loading
-    const timeout = setTimeout(() => {
-      if (loading) {
-        console.log('Timeout reached, forcing loading to false');
-        setLoading(false);
-        Alert.alert('Warning', 'Profile loading timed out. Using default values.');
-      }
-    }, 30000);
-
-    return () => clearTimeout(timeout);
   }, [session]);
+
+  const getCurrentLocation = async () => {
+    try {
+      console.log('🗺️ Requesting location permission...');
+      
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('❌ Location permission denied');
+        setUserLocation('Singapore');
+        return;
+      }
+
+      console.log('✅ Location permission granted');
+      
+      let location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      
+      console.log('📍 Coordinates:', location.coords.latitude, location.coords.longitude);
+      
+      let reverseGeocode = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+      
+      if (reverseGeocode.length > 0) {
+        const address = reverseGeocode[0];
+        console.log('🏠 Address details:', address);
+        
+        const area = address.district || address.subregion || address.city || 'Singapore';
+        const locationString = `${area}, Singapore`;
+        setUserLocation(locationString);
+        console.log('✅ Final location:', locationString);
+      }
+      
+    } catch (error) {
+      console.log('❌ Location error:', error);
+      setUserLocation('Singapore');
+    }
+  };
 
   async function getProfile() {
     try {
@@ -78,7 +91,7 @@ export default function ProfileScreen({ navigation, session }) {
       console.log('Fetching from profiles table...');
       const { data, error, status } = await supabase
         .from('profiles')
-        .select(`username, website, avatar_url, full_name`)
+        .select(`username, website, full_name`)
         .eq('id', session?.user.id)
         .single();
 
@@ -93,14 +106,11 @@ export default function ProfileScreen({ navigation, session }) {
         console.log('Profile data found:', data);
         setUsername(data.username || '');
         setWebsite(data.website || '');
-        setAvatarUrl(data.avatar_url || '');
         setFullName(data.full_name || '');
       } else {
         console.log('No profile data, using defaults');
-        // Set defaults if no profile exists
         setUsername('');
         setWebsite('');
-        setAvatarUrl('');
         setFullName('');
       }
     } catch (error) {
@@ -108,10 +118,8 @@ export default function ProfileScreen({ navigation, session }) {
       if (error instanceof Error) {
         Alert.alert('Error', error.message);
       }
-      // Set defaults even on error
       setUsername('');
       setWebsite('');
-      setAvatarUrl('');
       setFullName('');
     } finally {
       console.log('Setting loading to false');
@@ -129,7 +137,6 @@ export default function ProfileScreen({ navigation, session }) {
         username: editUsername,
         website: editWebsite,
         full_name: editFullName,
-        avatar_url: avatarUrl,
         updated_at: new Date(),
       };
 
@@ -215,77 +222,11 @@ export default function ProfileScreen({ navigation, session }) {
           </TouchableOpacity>
         </View>
         <Text style={styles.userName}>{getUserDisplayName()}</Text>
-        <Text style={styles.userLocation}>📍 Toa Payoh, Singapore</Text>
+        <Text style={styles.userLocation}>📍 {userLocation}</Text>
         <Text style={styles.joinDate}>Member since {new Date(session?.user?.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</Text>
       </View>
 
-      {/* Stats Cards Row */}
-      <View style={styles.statsRow}>
-        <TouchableOpacity style={styles.statsCard}>
-          <Text style={styles.statsNumber}>{userStats.totalAchievements}</Text>
-          <Text style={styles.statsLabel}>Achievements</Text>
-          <Text style={styles.statsIcon}>🏆</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.statsCard}>
-          <Text style={styles.statsNumber}>{userStats.missionsCompleted}</Text>
-          <Text style={styles.statsLabel}>Missions</Text>
-          <Text style={styles.statsIcon}>🎯</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Recent Achievements Section */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Achievements</Text>
-          <TouchableOpacity>
-            <Text style={styles.viewAllText}>View All →</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.achievementScroll}>
-          {achievements.slice(0, 4).map((achievement, index) => (
-            <TouchableOpacity key={index} style={styles.achievementCard}>
-              <Text style={styles.achievementIcon}>{achievement.icon}</Text>
-              <Text style={styles.achievementName}>{achievement.name}</Text>
-              <Text style={styles.achievementDesc}>{achievement.description}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Progress Overview */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Progress Overview</Text>
-        
-        <View style={styles.progressCard}>
-          <View style={styles.progressItem}>
-            <Text style={styles.progressLabel}>Emergency Kit</Text>
-            <View style={styles.progressBarContainer}>
-              <View style={[styles.progressBar, { width: '85%' }]} />
-            </View>
-            <Text style={styles.progressPercent}>85%</Text>
-          </View>
-          
-          <View style={styles.progressItem}>
-            <Text style={styles.progressLabel}>Safety Knowledge</Text>
-            <View style={styles.progressBarContainer}>
-              <View style={[styles.progressBar, { width: '92%' }]} />
-            </View>
-            <Text style={styles.progressPercent}>92%</Text>
-          </View>
-          
-          <View style={styles.progressItem}>
-            <Text style={styles.progressLabel}>Mission Progress</Text>
-            <View style={styles.progressBarContainer}>
-              <View style={[styles.progressBar, { width: '67%' }]} />
-            </View>
-            <Text style={styles.progressPercent}>8/12</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Profile Menu */}
+      {/* Account Settings */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account Settings</Text>
         
@@ -313,6 +254,9 @@ export default function ProfileScreen({ navigation, session }) {
           <Text style={styles.logoutText}>Sign Out</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Bottom padding for tab navigator */}
+      <View style={styles.bottomPadding} />
 
       {/* Edit Profile Modal */}
       <Modal
@@ -475,123 +419,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#a0aec0',
   },
-  statsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginTop: 20,
-    marginBottom: 24,
-  },
-  statsCard: {
-    flex: 1,
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    marginHorizontal: 6,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  statsNumber: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.primary,
-    marginBottom: 4,
-  },
-  statsLabel: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  statsIcon: {
-    fontSize: 24,
-  },
   section: {
     paddingHorizontal: 20,
     marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
+    marginTop: 24,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: colors.text.primary,
-  },
-  viewAllText: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  achievementScroll: {
-    marginHorizontal: -20,
-    paddingHorizontal: 20,
-  },
-  achievementCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginRight: 12,
-    width: 140,
-    alignItems: 'center',
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  achievementIcon: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  achievementName: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: colors.text.primary,
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  achievementDesc: {
-    fontSize: 10,
-    color: colors.text.light,
-    textAlign: 'center',
-    lineHeight: 12,
-  },
-  progressCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-  },
-  progressItem: {
-    marginBottom: 20,
-  },
-  progressLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text.secondary,
-    marginBottom: 8,
-  },
-  progressBarContainer: {
-    height: 8,
-    backgroundColor: '#e2e8f0',
-    borderRadius: 4,
-    marginBottom: 4,
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: colors.status.success,
-    borderRadius: 4,
-  },
-  progressPercent: {
-    fontSize: 12,
-    color: colors.text.light,
-    alignSelf: 'flex-end',
+    marginBottom: 16,
   },
   menuItem: {
     flexDirection: 'row',
@@ -731,5 +568,8 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: 'white',
     fontWeight: '600',
+  },
+  bottomPadding: {
+    height: 100,
   },
 });
