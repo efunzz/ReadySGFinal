@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, RefreshControl, ActivityIndicator , Linking, Alert} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import * as Location from 'expo-location';
@@ -179,6 +179,30 @@ export default function HomeScreen({ navigation }) {
     month: 'long', 
     day: 'numeric' 
   });
+
+  const makePhoneCall = (phoneNumber, serviceName) => {
+    const url = `tel:${phoneNumber}`;
+    
+    Alert.alert(
+      `Call ${serviceName}?`,
+      `This will call ${phoneNumber}`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Call',
+          onPress: () => {
+            Linking.openURL(url).catch(err => {
+              console.error('Failed to make phone call:', err);
+              Alert.alert('Error', 'Unable to make phone call');
+            });
+          }
+        }
+      ]
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -369,12 +393,12 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Emergency Contacts</Text>
           <View style={styles.emergencyContacts}>
-            <TouchableOpacity style={styles.emergencyButton}>
+            <TouchableOpacity style={styles.emergencyButton} onPress={() => makePhoneCall('995', 'SCDF Emergency Services')}>
               <Text style={styles.emergencyButtonText}>🚨 Emergency Services</Text>
               <Text style={styles.emergencyNumber}>995</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.emergencyButton}>
+            <TouchableOpacity style={styles.emergencyButton} onPress={() => makePhoneCall('1777', 'Non-Emergency Services')}>
               <Text style={styles.emergencyButtonText}>🚑 Non-Emergency</Text>
               <Text style={styles.emergencyNumber}>1777</Text>
             </TouchableOpacity>
