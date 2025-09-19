@@ -206,7 +206,10 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.section}>
           <TouchableOpacity 
             style={styles.sectionHeader}
-            onPress={() => navigation.navigate('Badges')}
+            onPress={() => {
+              navigation.navigate('Menu'); 
+              navigation.navigate('Badges'); 
+            }}
           >
             <Text style={styles.sectionTitle}>My Badges</Text>
             <Ionicons name="chevron-forward" size={20} color="#718096" />
