@@ -411,42 +411,6 @@ export default function FlashFloodSimulator({ navigation, route }) {
     }
   };
 
-  const renderTestButton = () => {
-    // Only show in development/testing
-    if (__DEV__) {
-      return (
-        <TouchableOpacity 
-          style={styles.testBadgeButton}
-          onPress={async () => {
-            try {
-              const { data: { user } } = await supabase.auth.getUser();
-              if (user) {
-                const result = await BadgeService.completeModule(
-                  user.id, 
-                  'flash_flood_simulator', 
-                  95
-                );
-                Alert.alert(
-                  'Badge Test Complete!',
-                  `Earned ${result.xpEarned} XP. Check badges tab!`,
-                  [
-                    { text: 'View Badges', onPress: () => navigation.navigate('Badges') },
-                    { text: 'OK', style: 'cancel' }
-                  ]
-                );
-              }
-            } catch (error) {
-              Alert.alert('Error', error.message);
-            }
-          }}
-        >
-          <Text style={styles.testBadgeButtonText}>🧪 Test Badge Earn</Text>
-        </TouchableOpacity>
-      );
-    }
-    return null;
-  };
-
   // Calculate progress percentage for progress bar
   const progressPercentage = ((currentStep + 1) / currentScenario.steps.length) * 100;
 
@@ -489,7 +453,6 @@ export default function FlashFloodSimulator({ navigation, route }) {
 
         {/* Game content overlay */}
         {renderGameContent()}
-        {renderTestButton()}
       </ImageBackground>
     </View>
   );
@@ -774,20 +737,6 @@ const styles = StyleSheet.create({
   continueButtonText: {
     color: 'white',
     fontSize: 18,
-    fontWeight: 'bold',
-  },
-  testBadgeButton: {
-    position: 'absolute',
-    bottom: 100,
-    right: 20,
-    backgroundColor: 'rgba(128, 0, 128, 0.8)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 15,
-  },
-  testBadgeButtonText: {
-    color: 'white',
-    fontSize: 12,
     fontWeight: 'bold',
   },
 });
