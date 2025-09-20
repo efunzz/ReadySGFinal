@@ -298,7 +298,7 @@ export default function HomeScreen({ navigation }) {
 
             <TouchableOpacity 
               style={[styles.quickActionCard, styles.toolsCard]}
-              onPress={() => navigateToTab('Cart')}
+              onPress={() => navigateToTab('PreparednessTools')}
             >
               <Image 
                 source={require('../assets/tick.png')} 

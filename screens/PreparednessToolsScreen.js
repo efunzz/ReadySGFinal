@@ -396,7 +396,11 @@ export default function PreparednessToolsScreen({ navigation }) {
 
   // RENDER FUNCTIONS
   const renderChat = () => (
-    <View style={styles.chatContainer}>
+    <KeyboardAvoidingView 
+      style={styles.chatContainer} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+    >
       <View style={styles.chatHeader}>
         <Text style={styles.chatTitle}>🤖 AI Chatbot</Text>
         <Text style={styles.chatSubtitle}>Ask me anything about emergency preparedness!</Text>
@@ -453,7 +457,7 @@ export default function PreparednessToolsScreen({ navigation }) {
           <Text style={styles.sendButtonText}>Send</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 
   const renderCollection = () => {
@@ -802,7 +806,7 @@ const styles = StyleSheet.create({
   chatContainer: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingBottom: 100, 
+    paddingBottom: 20, 
   },
   chatHeader: {
     backgroundColor: 'white',
@@ -824,12 +828,12 @@ const styles = StyleSheet.create({
   },
   chatSubtitle: {
     fontSize: 12, 
-    color: '#718096',
+    color: '#4a5568',
     textAlign: 'center',
   },
   messagesContainer: {
     flex: 1, 
-    marginBottom: 100, 
+    marginBottom: 210, 
   },
   messageWrapper: {
     marginBottom: 8, 
