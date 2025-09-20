@@ -4,8 +4,7 @@ export class OneMapService {
   constructor() {
     this.cache = new Map();
     this.cacheTimeout = 10 * 60 * 1000; // 10 minutes cache
-    // REPLACE THIS WITH YOUR ACTUAL ACCESS TOKEN FROM ONEMAP
-    this.accessToken = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo4NzkzLCJmb3JldmVyIjpmYWxzZSwiaXNzIjoiT25lTWFwIiwiaWF0IjoxNzU3ODY1NzU3LCJuYmYiOjE3NTc4NjU3NTcsImV4cCI6MTc1ODEyNDk1NywianRpIjoiZDc3ZmM5NjctN2Q0Yi00ZTU1LWE3OTQtMTNkMmJjZGIyMDYyIn0.tVz4IgxiqpXFHFtrW0BlxedsUQAlWRHGIMpF6p6Ukbi4p_jUY1OrBtKCh2HJvipLqVpE1yPT7iEsIMCYw2EDKXDi_2motWqQfxZ36GcJuun05CQ_Ee47E-KwlnZMozHSqxLuFhnY-KmVZ54-LxWn5TytfN1L__lDjy_ycak1CKD2muOP0a2CzM4JlyaEvMI_4aaSMokvym_XH5JJ7BTR5ZhYCrZnuzLOBD7W3kt8E7LkUwtvRUBM45QkvZf5JihnkJ4oMacKXt0Kt0EVvQ1UwMq7LLtykRq_jykRPPmIl6c3DyIXaAS2DZ8_-PNmTUT22dQKcrZW9PHhQNowb3ttRQ';
+    this.accessToken = '// REPLACE THIS WITH YOUR ACTUAL ACCESS TOKEN FROM ONEMAP';
   }
 
   // Get cached data if available and not expired
