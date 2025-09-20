@@ -19,35 +19,47 @@ export default function SignupScreen({ navigation }) {
     }
   
     setLoading(true);
+    console.log('Starting signup process for:', email);
   
-    // Supabase signup call
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    try {
+      // Supabase signup call
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
   
-    setLoading(false);
+      console.log('Signup response:', { data, error });
+      
+      setLoading(false);
   
-    if (error) {
-      Alert.alert('Signup Failed', error.message);
-    } else if (!data.session) {
-      // No session means email confirmation is required
-      Alert.alert(
-        'Success',
-        'Account created! Please check your email to verify your account before logging in.',
-        [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
-      );
-    } else {
-      // Session exists, so user is logged in immediately
-      navigation.navigate('MainApp');
+      if (error) {
+        console.error('Signup error:', error);
+        Alert.alert('Signup Failed', `Error: ${error.message}\n\nDetails: ${error.details || 'No additional details'}`);
+      } else if (!data.session) {
+        console.log('Signup successful, email confirmation required');
+        // No session means email confirmation is required
+        Alert.alert(
+          'Success',
+          'Account created! Please check your email to verify your account before logging in.',
+          [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+        );
+      } else {
+        console.log('Signup successful, user logged in immediately');
+        // Session exists, so user is logged in immediately
+        navigation.navigate('MainApp');
+      }
+    } catch (catchError) {
+      console.error('Caught error during signup:', catchError);
+      setLoading(false);
+      Alert.alert('Unexpected Error', `Something went wrong: ${catchError.message}`);
     }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Create Account</Text>
-      <Text style={styles.subtitle}>Sign up to start ordering</Text>
-     
+      <Text style={styles.subtitle}>Sign up to start using ReadySG</Text>
+      
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -56,7 +68,7 @@ export default function SignupScreen({ navigation }) {
         keyboardType="email-address"
         autoCapitalize="none"
       />
-     
+      
       <TextInput
         style={styles.input}
         placeholder="Password (min 6 characters)"
@@ -64,7 +76,7 @@ export default function SignupScreen({ navigation }) {
         onChangeText={setPassword}
         secureTextEntry
       />
-     
+      
       <TouchableOpacity
         style={styles.button}
         onPress={handleSignup}
@@ -72,7 +84,7 @@ export default function SignupScreen({ navigation }) {
       >
         <Text style={styles.buttonText}>{loading ? 'Loading...' : 'Sign Up'}</Text>
       </TouchableOpacity>
-     
+      
       <TouchableOpacity
         style={styles.linkButton}
         onPress={() => navigation.navigate('Login')}
